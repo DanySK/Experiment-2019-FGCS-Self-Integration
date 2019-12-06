@@ -1,0 +1,25 @@
+# source: http://archive.ph/UmNw1
+cpus:
+- type: desktop
+  model: AMD Ryzen 7 1700X
+  mips: 38037
+  cores: 16
+#  from: http://archive.ph/TCg3o
+- type: soc
+  model: Raspberry PI 2
+  mips: 1686
+  cores: 4
+#  from: http://archive.ph/PPTtH
+- type: phone
+  model: ARM Cortex-A72
+  mips: 3883
+  cores: 4
+#  from: https://web.archive.org/web/20110719103301/http://www.eeejournal.com/2009/12/arm11-vs-cortex-a8-vs-cortex-a9.html
+- type: notebook
+  model: Intel Core i7 2630QM
+  mips: 13217
+  cores: 8
+- type: hpc
+  model: AMD EPYC 7401P
+  mips: 80190
+  cores: 48
