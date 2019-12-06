@@ -6,6 +6,16 @@
 	</projects>
 	<buildSpec>
 		<buildCommand>
+			<name>org.jetbrains.kotlin.ui.kotlinBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.xtext.ui.shared.xtextBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
 			<name>org.eclipse.jdt.core.javabuilder</name>
 			<arguments>
 			</arguments>
@@ -19,5 +29,14 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.buildship.core.gradleprojectnature</nature>
+		<nature>org.eclipse.xtext.ui.shared.xtextNature</nature>
+		<nature>org.jetbrains.kotlin.core.kotlinNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>kotlin_bin</name>
+			<type>2</type>
+			<locationURI>org.jetbrains.kotlin.core.filesystem:/2019-FGCS-Self-Integration/kotlin_bin</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
