@@ -1,0 +1,40 @@
+module protelis:coord:sparsechoice
+import protelis:coord:spreading
+
+def default() = [POSITIVE_INFINITY, POSITIVE_INFINITY]
+
+def breakUsingUids(uid, grain, metric) =
+	share (lead, nbrLead <- uid) {
+        distanceCompetition(distanceToWithMetric(uid == lead, metric), nbrLead, uid, grain)
+    } == uid
+
+def distanceCompetition(d, nbrLead, uid, grain) =
+	mux (d > grain) {
+        uid
+    } else {
+        let thr = 0.25 * grain;
+        mux (d >= thr) {
+            default()
+        } else {
+            mux (d >= thr) {
+                default()
+            } else {
+                foldMin(nbrLead)
+            }
+        }
+    }
+
+def randomUid() = rep (v <- [self.nextRandomDouble(), self.getDeviceUID()]) { v }
+
+/**
+ * Devices compete against one another to become local leaders,
+ * resulting  in  a  random  Voronoi  partition  with  a  characteristic
+ * grain size.
+ *
+ * @param grain  num, partition dimension
+ * @param metric () -> num, estimate distance from the leader
+ * @return       bool, true if the current device is the leader, false otherwise
+ */
+public def S(grain, metric) {
+    breakUsingUids(randomUid(), grain, metric)
+}
