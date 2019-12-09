@@ -1,8 +1,11 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 /*
  * DEFAULT GRADLE BUILD FOR ALCHEMIST SIMULATOR
  */
 
 plugins {
+    kotlin("jvm") version "1.3.60"
     application
 }
 
@@ -28,6 +31,14 @@ sourceSets {
 dependencies {
     // it is highly recommended to replace the '+' symbol with a fixed version
     implementation("it.unibo.alchemist:alchemist:+")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.3.60")
+    implementation("com.uchuhimo:konf-core:+")
+    implementation("com.uchuhimo:konf-yaml:+")
+}
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
 }
 
 val alchemistGroup = "Run Alchemist"
