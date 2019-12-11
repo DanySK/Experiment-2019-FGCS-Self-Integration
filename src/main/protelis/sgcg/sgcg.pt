@@ -9,6 +9,7 @@ import protelis:coord:meta:timereplication
 import protelis:coord:nonselfstabilizing:accumulation
 import sgcg:election
 import TaskManager.*
+import Assertions.*
 
 public def fastG(source, sourceLevel, initial, metric, accumulate) {
 	let default = [POSITIVE_INFINITY, initial]
@@ -31,47 +32,45 @@ public def fastG(source, sourceLevel, initial, metric, accumulate) {
 }
 
 public def nbrRangeDelta() = self.nbrRange() + 0.1
-//def waitingTasks() = [] // env.get("queue") + env.put("queue", [])
-//def completedTasks() = [] // env.get("executed") + env.put("queue", [])
-//def submitTasks(tasks) = []
-//def runningTasks(tasks) = []
 
-//let newTask = 
-//	if (env.has("leaf")) { 
-//		let frequency = env.get("frequency")
-//		let meanSize = optionally(env.get("size")).orElse(0)
-//		optionally(makeTask(frequency, meanSize))
-//	} else {
-//		none()
-//	}
 let myid = self.getDeviceUID().getId()
 let networkCost = 0.01
-let capacity = freeMips()
+let capacity = exponentialBackoffFilter(freeMips(), 0.95)
+env.put("capacity", capacity)
 let sink = singleLeader(myid)
+env.put("singleLeader", sink)
 let isSink = sink == myid
 let minMaxCapacity = cossip(isSink, [capacity, capacity]) { a, b ->
 	[ min(a.get(0), b.get(0)), max(a.get(1), b.get(1)) ]
 }
-let minCapacity = minMaxCapacity.get(0)
-let maxCapacity = minMaxCapacity.get(1)
+env.put("minMaxCapacity", minMaxCapacity)
+let minCapacity = min(capacity, minMaxCapacity.get(0))
+env.put("minCapacity", minCapacity)
+let maxCapacity = max(capacity, minMaxCapacity.get(1))
+env.put("maxCapacity", maxCapacity)
 let normalizedCapacity = if (maxCapacity == minCapacity) { 1 } else { (capacity - minCapacity) / (maxCapacity - minCapacity) }
-let metric = (normalizedCapacity + nbr(normalizedCapacity)) / 2 + networkCost
+let metric = mux (nbr(myid) == myid) { 0 } else { (normalizedCapacity + nbr(normalizedCapacity)) / 2 + networkCost }
+metricIsConsistent(metric)
 env.put("normalizedCapacity", normalizedCapacity)
 env.putField("metric", metric)
-update(self.getDeltaTime() * 10)
-let completed = timeReplicatedWithK({ gossip(completedTasks(), union) }, [], 10, 2)
-let isCandidate = capacity > 0 || capacity == maxCapacity 
-let isLeader = if (isCandidate) { S(0.5) { metric } } else { false }
-let potential = distanceToWithMetric(isLeader) { metric }
-//let newLocalTasks = optionally(nextTask()).map { [it] }.orElse([])
-// task nuovi in locale
-// task che mi son preso -> derivano da quelli che ho accumulato
-// task accumulati
-// i task da mandare su sono quelli nuovi
-//    + quelli che avevo e non ho cominciato a fare
-//    - quelli che ho finito
-//G(singleLeader, completedTasks(), metric, union)
+update(self.getDeltaTime() * 100)
+let locallyCompleted = completedTasks()
+env.put("locallyCompleted", locallyCompleted)
+let locallyCompletedTasks = locallyCompleted.map { it.getTask() }
+let completed = timeReplicatedWithK({ gossip(locallyCompletedTasks, union) }, locallyCompletedTasks, 10, 2)
+env.put("completed", completed)
 let waiting = waitingTasks().subtract(completed)
+env.put("waiting", waiting)
+cleanupCompletedTasks(completed)
+let isCandidate = capacity > 0 || capacity == maxCapacity 
+env.put("isCandidate", isCandidate)
+let isLeader = if (isCandidate) { S(1) { metric } } else { false }
+env.put("isLeader", isLeader)
+let potential = distanceToWithMetric(isLeader) { metric }
+nonNegative(potential)
+env.put("potential", potential)
 let executing = runningTasks()
+env.put("executing", executing)
 let receivedTasks = C(potential, { a, b -> a.union(b).subtract(executing).subtract(completed) }, waiting, [])
+env.put("receivedTasks", receivedTasks)
 enqueue(if (isLeader) { receivedTasks } else { [] })

@@ -1,20 +1,35 @@
 incarnation: protelis
 
+variables:
+  meanTaskSize: &meanTaskSize
+    formula: 10000
+
 network-model:
   type: ConnectWithinDistance
-  parameters: [0.5]
+  parameters: [1.5]
 
-gradient: &sgcg
+sgcg: &sgcg
   - time-distribution: 1
     program: sgcg:sgcg
   - program: send
 
+taskGenerator: &taskGenerator
+  - time-distribution:
+      type: ExponentialTime
+      parameters: [1]
+    program: >
+      import Task.newTask
+      newTask(self.nextRandomDouble() * env.get("meanTaskSize") * self.getDeviceUID().getId())
+
 displacements:
   - in:
       type: Grid
-      parameters: [-5, -5, 5, 5, 0.25, 0.25, 0.1, 0.1]
+      parameters: [-5, -5, 5, 5, 1, 1, 0.1, 0.1]
     contents:
       - molecule: cpuType
         concentration: "desktop"
+      - molecule: meanTaskSize
+        concentration: *meanTaskSize
     programs:
       - *sgcg
+      - *taskGenerator
