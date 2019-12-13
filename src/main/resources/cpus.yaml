@@ -19,7 +19,7 @@ cpus:
   model: Intel Core i7 2630QM
   mips: 13217
   cores: 8
-- type: hpc
+- type: server
   model: AMD EPYC 7401P
   mips: 80190
   cores: 48

@@ -89,9 +89,11 @@ object TaskManager {
     @JvmStatic
     fun waitingTasks(context: ExecutionContext): Tuple = context.scheduler.localTasks.asTuple // Tuple<Task>
     @JvmStatic
-    fun runningTasks(context: ExecutionContext): Tuple = context.scheduler.allocatedTasks.asSequence()
+    fun runningTasks(context: ExecutionContext): Tuple = allocationInfo(context).asSequence()
         .flatMap { allocation -> allocation.tasks.asSequence().map { it.first } }
         .toList().asTuple // Tuple<Task>
+    @JvmStatic
+    fun allocationInfo(context: ExecutionContext) = context.scheduler.allocatedTasks
 }
 
 data class Task(val id: Long, val instructions: Instructions) {
@@ -99,14 +101,21 @@ data class Task(val id: Long, val instructions: Instructions) {
         private var idGenerator = 0L
 
         @JvmStatic
-        fun newTask(context: ExecutionContext, instructions: Long) = Task(idGenerator++, instructions).also {
+        fun newTask(context: ExecutionContext, instructions: Long, maxTasks: Int) = Task(idGenerator++, instructions).also {
             fun ExecutionContext.environment() = (this as AlchemistExecutionContext<*>).getEnvironmentAccess()
             val scheduler = taskmanagers.getOrElse(context.environment(), Collections::emptyMap)
                 .asSequence()
                 .find { (ctx, _) -> ctx.deviceUID == context.deviceUID }
                 ?.value
             if (scheduler != null) {
-                scheduler.localTasks += it
+                if (scheduler.localTasks.size < maxTasks) {
+                    scheduler.localTasks += it
+                } else {
+                    with (context.executionEnvironment) {
+                        val previous = if (has("drop")) get("drop") as Number else 1
+                        context.executionEnvironment.put("drop", previous.toInt() + 1 )
+                    }
+                }
             }
         }
     }
@@ -143,19 +152,21 @@ class Allocation(cpu: CPU) {
      */
     fun update(deltaTime: Double): List<Task> {
         var instructionsLeft = mips.forSeconds(deltaTime)
-        val taskMap = tasks.groupBy { (_, weight) ->
+        val completed = tasks.takeWhile { (_, weight) ->
             instructionsLeft -= weight
             instructionsLeft >= 0
         }
-        val newqueue = taskMap[false] ?: emptyList()
-        val partlyExecuted = newqueue.getOrNull(0)
-        val first = partlyExecuted
+        val incomplete = tasks.drop(completed.size + 1)
+        val possiblyPartlyExecuted = tasks.getOrNull(completed.size)
+        val first = possiblyPartlyExecuted
             ?.copy(second = -instructionsLeft)
             ?.let { listOf(it) }
             ?: emptyList()
-        tasks = first + newqueue.drop(1)
-        return taskMap[true]?.map { it.first } ?: emptyList()
+        tasks = first + incomplete
+//        require(tasks.all { (task, i) -> task.instructions >= i })
+        return completed.map { it.first }
     }
+    override fun toString() = tasks.map { (task, instructions) -> "${task.id}:$instructions" }.toString()
 }
 
 /**
@@ -170,6 +181,10 @@ class Scheduler(val cpu: CPU, private val policy: SchedulingPolicy) {
     var completedTasks: List<CompletedTask> = emptyList()
         private set
     var localTasks: List<Task> = emptyList()
+    val allTasks get() = allocatedTasks.asSequence()
+        .flatMap { it.tasks.asSequence() }
+        .map { it.first }
+        .toSet()
     private var newTasks: List<CompletedTask> = emptyList()
     val freeMIPS: MIPS get() = allocatedTasks.let { load ->
         val freeCores = load.count { it.tasks.isEmpty() }
@@ -180,7 +195,9 @@ class Scheduler(val cpu: CPU, private val policy: SchedulingPolicy) {
         }
     }
     fun enqueue(task: Task) {
-        policy(allocatedTasks, task)
+        if (!allTasks.contains(task)) {
+            policy(allocatedTasks, task)
+        }
     }
     private fun updateCores(deltaTime: Double): List<Task> = allocatedTasks.flatMap { it.update(deltaTime) }
     /**

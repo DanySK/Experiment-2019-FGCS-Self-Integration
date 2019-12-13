@@ -2,7 +2,24 @@ incarnation: protelis
 
 variables:
   meanTaskSize: &meanTaskSize
-    formula: 10000
+    formula: 1000
+  serverCount: &serverCount
+    formula: 10
+  desktopCount: &desktopCount
+    formula: 25
+  socCount: &socCount
+    formula: 100
+  maxTasks: &maxTasks
+    formula: 50
+  seed: &seed
+    min: 0
+    max: 0
+    step: 1
+    default: 0
+
+seeds:
+  scenario: *seed
+  simulation: *seed
 
 network-model:
   type: ConnectWithinDistance
@@ -19,17 +36,47 @@ taskGenerator: &taskGenerator
       parameters: [1]
     program: >
       import Task.newTask
-      newTask(self.nextRandomDouble() * env.get("meanTaskSize") * self.getDeviceUID().getId())
+      newTask(self.nextRandomDouble() * env.get("meanTaskSize") * self.getDeviceUID().getId(), env.get("maxTasks"))
+
+taskSize: &taskSize
+  molecule: meanTaskSize
+  concentration: *meanTaskSize
+maxTaskPerNode: &maxTaskPerNode
+  molecule: maxTasks
+  concentration: *maxTasks
 
 displacements:
   - in:
-      type: Grid
-      parameters: [-5, -5, 5, 5, 1, 1, 0.1, 0.1]
+      type: CircularArc
+      parameters: [*serverCount, 0, 0, 0.5]
+    contents:
+      - molecule: cpuType
+        concentration: "server"
+      - *taskSize
+      - *maxTaskPerNode
+    programs:
+      - *sgcg
+  - in:
+      type: CircularArc
+      parameters: [*desktopCount, 0, 0, 1.8]
     contents:
       - molecule: cpuType
         concentration: "desktop"
+      - *taskSize
+      - *maxTaskPerNode
+    programs:
+      - *sgcg
+      - *taskGenerator
+  - in:
+      type: CircularArc
+      parameters: [*socCount, 0, 0, 3]
+    contents:
+      - molecule: cpuType
+        concentration: "soc"
       - molecule: meanTaskSize
         concentration: *meanTaskSize
+      - *taskSize
+      - *maxTaskPerNode
     programs:
       - *sgcg
       - *taskGenerator
