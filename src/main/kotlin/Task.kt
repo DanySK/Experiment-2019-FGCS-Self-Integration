@@ -17,6 +17,7 @@ import org.protelis.vm.ExecutionContext
 import java.lang.IllegalStateException
 import java.util.Collections
 import java.util.WeakHashMap
+import kotlin.math.min
 
 //@file:JvmName("Tasks")
 typealias Instructions = Long
@@ -139,7 +140,7 @@ fun MIPS.forSeconds(seconds: Double): Instructions = (seconds * this).toLong()
  * Allocation of a sequence of tasks on a logical core of a given CPU
  */
 class Allocation(cpu: CPU) {
-    private val mips: MIPS = cpu.mips / cpu.cores
+    val mips: MIPS = cpu.mips / cpu.cores
     var tasks: List<Pair<Task, Instructions>> = emptyList()
         private set
     val enqueuedInstructions: Instructions
@@ -187,12 +188,10 @@ class Scheduler(val cpu: CPU, private val policy: SchedulingPolicy) {
         .toSet()
     private var newTasks: List<CompletedTask> = emptyList()
     val freeMIPS: MIPS get() = allocatedTasks.let { load ->
-        val freeCores = load.count { it.tasks.isEmpty() }
-        if (freeCores > 0) {
-            freeCores * cpu.mips / cpu.cores
-        } else {
-            -load.map { it.enqueuedInstructions }.sum()
-        }
+//        val freeCores = load.count { it.tasks.isEmpty() }
+//        val base = 2 * freeCores * cpu.mips / cpu.cores
+//        base - load.map { min(it.enqueuedInstructions, it.mips) }.sum()
+        load.count { it.tasks.isEmpty() } * cpu.mips / cpu.cores
     }
     fun enqueue(task: Task) {
         if (!allTasks.contains(task)) {

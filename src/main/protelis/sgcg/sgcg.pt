@@ -1,6 +1,7 @@
 module sgcg:sgcg
 
-import protelis:coord:sparsechoice
+//import protelis:coord:sparsechoice
+import sgcg:customsparsechoice
 import protelis:coord:accumulation
 import protelis:coord:spreading
 import protelis:lang:utils
@@ -35,23 +36,28 @@ public def nbrRangeDelta() = self.nbrRange() + 0.1
 
 let myid = self.getDeviceUID().getId()
 let networkCost = 0.01
-let capacity = exponentialBackoffFilter(freeMips(), 0.95)
-env.put("capacity", capacity)
-let sink = singleLeader(myid)
-env.put("singleLeader", sink)
-let isSink = sink == myid
-let minMaxCapacity = cossip(isSink, [capacity, capacity]) { a, b ->
-	[ min(a.get(0), b.get(0)), max(a.get(1), b.get(1)) ]
-}
-env.put("minMaxCapacity", minMaxCapacity)
-let minCapacity = min(capacity, minMaxCapacity.get(0))
-env.put("minCapacity", minCapacity)
-let maxCapacity = max(capacity, minMaxCapacity.get(1))
+let freeCapacity = freeMips()
+env.put("freeCapacity", freeCapacity)
+let maxCapacity = rep (maxEver <- freeCapacity) { max(maxEver, freeCapacity) }
 env.put("maxCapacity", maxCapacity)
-let normalizedCapacity = if (maxCapacity == minCapacity) { 1 } else { (capacity - minCapacity) / (maxCapacity - minCapacity) }
-let metric = mux (nbr(myid) == myid) { 0 } else { (normalizedCapacity + nbr(normalizedCapacity)) / 2 + networkCost }
+let capacity = exponentialBackoffFilter(freeCapacity, 0.1)
+env.put("capacity", capacity)
+//let sink = singleLeader(myid)
+//env.put("singleLeader", sink)
+//let isSink = sink == myid
+//let minMaxCapacity = cossip(isSink, [capacity, capacity]) { a, b ->
+//	[ min(a.get(0), b.get(0)), max(a.get(1), b.get(1)) ]
+//}
+//env.put("minMaxCapacity", minMaxCapacity)
+//let minCapacity = min(capacity, minMaxCapacity.get(0))
+//env.put("minCapacity", minCapacity)
+//let maxCapacity = max(capacity, minMaxCapacity.get(1))
+//env.put("maxCapacity", maxCapacity)
+//let normalizedCapacity = if (maxCapacity == minCapacity) { 1 } else { (capacity - minCapacity) / (maxCapacity - minCapacity) }
+//let metric = mux (nbr(myid) == myid) { 0 } else { (normalizedCapacity + nbr(normalizedCapacity)) / 2 + networkCost }
 //metricIsConsistent(metric)
-env.put("normalizedCapacity", normalizedCapacity)
+//env.put("normalizedCapacity", normalizedCapacity)
+let metric = mux (nbr(myid) == myid) { 0 } else { min(capacity, nbr(capacity)) + networkCost }
 env.putField("metric", metric)
 update(self.getDeltaTime() * 100)
 let locallyCompleted = completedTasks()
@@ -67,9 +73,12 @@ env.put("done", optionally(env.get("done")).orElse(0) + justCompleted.size())
 let waiting = previouslyWaiting.subtract(justCompleted)
 env.put("waiting", waiting)
 cleanupCompletedTasks(justCompleted)
-let isCandidate = capacity > 0 || capacity == maxCapacity 
-env.put("isCandidate", isCandidate)
-let isLeader = if (isCandidate) { S(1) { metric } } else { false }
+//let isCandidate = capacity > 0 || capacity == maxCapacity 
+//env.put("isCandidate", isCandidate)
+//let isLeader = if (isCandidate) { S(1) { metric } } else { false }
+let leader = customSparseChoice(capacity, maxCapacity, myid, 2000) { metric }
+env.put("leader", leader)
+let isLeader = leader == myid
 env.put("isLeader", isLeader)
 let potential = distanceToWithMetric(isLeader) { metric }
 nonNegative(potential)
