@@ -34,14 +34,22 @@ public def fastG(source, sourceLevel, initial, metric, accumulate) {
 
 public def nbrRangeDelta() = self.nbrRange() + 0.1
 
+def debug(name, value) = optionally(env.get("debug"))
+	.map { env.put(name, value) }
+
+// Constants
 let myid = self.getDeviceUID().getId()
 let networkCost = 0.01
+
+// Local computational capacity status: maximum, current, and smoothed current
 let freeCapacity = freeMips()
 env.put("freeCapacity", freeCapacity)
 let maxCapacity = rep (maxEver <- freeCapacity) { max(maxEver, freeCapacity) }
 env.put("maxCapacity", maxCapacity)
 let capacity = exponentialBackoffFilter(freeCapacity, 0.1)
 env.put("capacity", capacity)
+
+// COMMENTED OUT: OVERLY-COMPLICATED METRIC
 //let sink = singleLeader(myid)
 //env.put("singleLeader", sink)
 //let isSink = sink == myid
@@ -57,34 +65,46 @@ env.put("capacity", capacity)
 //let metric = mux (nbr(myid) == myid) { 0 } else { (normalizedCapacity + nbr(normalizedCapacity)) / 2 + networkCost }
 //metricIsConsistent(metric)
 //env.put("normalizedCapacity", normalizedCapacity)
+
+// Distance between nodes changes with available computational power
 let metric = mux (nbr(myid) == myid) { 0 } else { min(capacity, nbr(capacity)) + networkCost }
-env.putField("metric", metric)
+debug("metric", metric)
 update(self.getDeltaTime() * 100)
+
+// Tasks successfully completed on this network node
 let locallyCompleted = completedTasks()
-env.put("locallyCompleted", locallyCompleted)
+debug("locallyCompleted", locallyCompleted)
 let locallyCompletedTasks = locallyCompleted.map { it.getTask() }
+
+// Tasks successfully completed on the whole network (downstream)
 let completed = timeReplicatedWithK({ gossip(locallyCompletedTasks, union) }, locallyCompletedTasks, 10, 2)
-env.put("completed", completed)
+debug("completed", completed)
+
+// Compute how many tasks have been solved locally
 let previouslyWaiting = waitingTasks()
-env.put("previouslyWaiting", previouslyWaiting)
+debug("previouslyWaiting", previouslyWaiting)
 let justCompleted = previouslyWaiting.intersection(completed)
-env.put("justCompleted", justCompleted)
+debug("justCompleted", justCompleted)
+// Overall count of completed tasks
 env.put("done", optionally(env.get("done")).orElse(0) + justCompleted.size())
+// Waiting tasks generated here
 let waiting = previouslyWaiting.subtract(justCompleted)
-env.put("waiting", waiting)
+debug("waiting", waiting)
 cleanupCompletedTasks(justCompleted)
-//let isCandidate = capacity > 0 || capacity == maxCapacity 
-//env.put("isCandidate", isCandidate)
-//let isLeader = if (isCandidate) { S(1) { metric } } else { false }
-let leader = customSparseChoice(capacity, maxCapacity, myid, 2000) { metric }
+
+// Domain separatation
+let leader = customSparseChoice(capacity, maxCapacity, myid, env.get("grain")) { metric }
 env.put("leader", leader)
 let isLeader = leader == myid
 env.put("isLeader", isLeader)
+// (computational) distance from leader
 let potential = distanceToWithMetric(isLeader) { metric }
-nonNegative(potential)
-env.put("potential", potential)
+debug("assertion: non-negative potential", nonNegative(potential))
+debug("potential", potential)
+// Get tasks currently running here
 let executing = runningTasks()
-env.put("executing", allocationInfo())
+debug("executing", allocationInfo())
+// Aggregate requests towards the leader (upstream)
 let receivedTasks = C(potential, { a, b -> a.union(b).subtract(executing).subtract(completed) }, waiting, [])
-env.put("receivedTasks", receivedTasks)
+debug("receivedTasks", receivedTasks)
 enqueue(if (isLeader) { receivedTasks } else { [] })
