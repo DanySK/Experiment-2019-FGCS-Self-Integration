@@ -2,7 +2,7 @@ incarnation: protelis
 
 variables:
   meanTaskSize: &meanTaskSize
-    formula: 1000
+    formula: 1000.0
   serverCount: &serverCount
     formula: 10
   desktopCount: &desktopCount
@@ -11,6 +11,16 @@ variables:
     formula: 100
   maxTasks: &maxTasks
     formula: 50
+  baseFrequency: &baseFrequency
+    formula: 0.01
+  peakFrequency: &peakFrequency
+    formula: 1
+  peakStart: &peakStart
+    formula: 100
+  peakend: &peakEnd
+    formula: 200
+  grain: &grain
+    formula: 1500
   seed: &seed
     min: 0
     max: 0
@@ -32,8 +42,8 @@ sgcg: &sgcg
 
 taskGenerator: &taskGenerator
   - time-distribution:
-      type: ExponentialTime
-      parameters: [1]
+      type: ExponentialStep
+      parameters: [*baseFrequency, *peakFrequency, *peakStart, *peakEnd, 10]
     program: >
       import Task.newTask
       newTask(self.nextRandomDouble() * env.get("meanTaskSize") * self.getDeviceUID().getId(), env.get("maxTasks"))
@@ -44,6 +54,9 @@ taskSize: &taskSize
 maxTaskPerNode: &maxTaskPerNode
   molecule: maxTasks
   concentration: *maxTasks
+grain: &grainSize
+  molecule: grain
+  concentration: *grain
 
 displacements:
   - in:
@@ -54,6 +67,7 @@ displacements:
         concentration: "server"
       - *taskSize
       - *maxTaskPerNode
+      - *grainSize
     programs:
       - *sgcg
   - in:
@@ -64,6 +78,7 @@ displacements:
         concentration: "desktop"
       - *taskSize
       - *maxTaskPerNode
+      - *grainSize
     programs:
       - *sgcg
       - *taskGenerator
@@ -77,6 +92,7 @@ displacements:
         concentration: *meanTaskSize
       - *taskSize
       - *maxTaskPerNode
+      - *grainSize
     programs:
       - *sgcg
       - *taskGenerator
