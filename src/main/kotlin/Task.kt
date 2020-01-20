@@ -226,5 +226,5 @@ object Assertions {
 |          Other values in ]0, 1.1[: ${metric.toMap().mapValues { (id, v) -> "$v -> ${v > 0 && v < 1.1 }" }}""".trimMargin()
     }
     @JvmStatic
-    fun nonNegative(number: Number) = number.toDouble() > 0
+    fun nonNegative(number: Number) = require(number.toDouble() >= 0)
 }
