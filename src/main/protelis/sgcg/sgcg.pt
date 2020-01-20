@@ -46,7 +46,7 @@ let freeCapacity = freeMips()
 env.put("freeCapacity", freeCapacity)
 let maxCapacity = rep (maxEver <- freeCapacity) { max(maxEver, freeCapacity) }
 env.put("maxCapacity", maxCapacity)
-let capacity = exponentialBackoffFilter(freeCapacity, 0.1)
+let capacity = exponentialBackoffFilter(freeCapacity, env.get("alpha"))
 env.put("capacity", capacity)
 
 // COMMENTED OUT: OVERLY-COMPLICATED METRIC

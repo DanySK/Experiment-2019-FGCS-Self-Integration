@@ -21,6 +21,9 @@ variables:
     formula: 200
   grain: &grain
     formula: 1500
+  smoothing: &smoothing
+    formula: 0.1
+
   seed: &seed
     min: 0
     max: 0
@@ -57,6 +60,9 @@ maxTaskPerNode: &maxTaskPerNode
 grain: &grainSize
   molecule: grain
   concentration: *grain
+smoothing: &low-pass
+  molecule: alpha
+  concentration: *smoothing
 
 displacements:
   - in:
@@ -68,6 +74,7 @@ displacements:
       - *taskSize
       - *maxTaskPerNode
       - *grainSize
+      - *low-pass
     programs:
       - *sgcg
   - in:
@@ -79,6 +86,7 @@ displacements:
       - *taskSize
       - *maxTaskPerNode
       - *grainSize
+      - *low-pass
     programs:
       - *sgcg
       - *taskGenerator
@@ -93,6 +101,7 @@ displacements:
       - *taskSize
       - *maxTaskPerNode
       - *grainSize
+      - *low-pass
     programs:
       - *sgcg
       - *taskGenerator
