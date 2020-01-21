@@ -5,3 +5,6 @@
 build
 .idea/
 out/
+test.txt
+.classpath
+.project
