@@ -223,7 +223,7 @@ object Assertions {
         metric.localValue == 0.0 && metric.values().all { it in 0.0..1.1 }
     ) {
         """invalid field $metric: local value expected 0, is: ${metric.localValue} (${metric.localValue == 0.0}).
-|          Other values in ]0, 1.1[: ${metric.toMap().mapValues { (id, v) -> "$v -> ${v > 0 && v < 1.1 }" }}""".trimMargin()
+|          Other values in ]0, 1.1[: ${metric.toMap().mapValues { (_, v) -> "$v -> ${v > 0 && v < 1.1 }" }}""".trimMargin()
     }
     @JvmStatic
     fun nonNegative(number: Number) = require(number.toDouble() >= 0)
