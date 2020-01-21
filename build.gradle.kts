@@ -103,6 +103,7 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
             description = "Launches batch experiments for $capitalizedName"
             val variables = listOf("seed", "meanTaskSize", "smoothing", "grain", "peakFrequency").toTypedArray()
             args(
+                "-e", "data/${it.nameWithoutExtension}",
                 "-b",
                 "-var", *variables,
                 "-p", threadCount
