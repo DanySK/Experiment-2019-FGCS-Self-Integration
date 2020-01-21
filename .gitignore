@@ -8,3 +8,4 @@ out/
 test.txt
 .classpath
 .project
+data/
