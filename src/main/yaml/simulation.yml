@@ -15,20 +15,39 @@ variables:
     formula: 0.01
   peakFrequency: &peakFrequency
     formula: 1
+  # Traffic peak
   peakStart: &peakStart
     formula: 100
   peakend: &peakEnd
-    formula: 200
+    formula: peakStart + 300
+  # Grain size in MIPS
   grain: &grain
     formula: 1500
+  # Low pass filter parameter
   smoothing: &smoothing
     formula: 0.1
-
+  debug: &debug
+    formula: "false"
   seed: &seed
     min: 0
     max: 0
     step: 1
     default: 0
+
+export:
+  - time
+  - molecule: capacity
+    aggregators: [mean]
+    value-filter: onlyfinite
+  - molecule: freeCapacity
+    aggregators: [mean]
+    value-filter: onlyfinite
+  - molecule: maxCapacity
+    aggregators: [mean]
+    value-filter: onlyfinite
+  - molecule: done
+    aggregators: [sum]
+    value-filter: onlyfinite
 
 seeds:
   scenario: *seed
@@ -63,6 +82,9 @@ grain: &grainSize
 smoothing: &low-pass
   molecule: alpha
   concentration: *smoothing
+debug: &is-debug
+  molecule: debug
+  concentration: *debug
 
 displacements:
   - in:
@@ -75,6 +97,7 @@ displacements:
       - *maxTaskPerNode
       - *grainSize
       - *low-pass
+      - *is-debug
     programs:
       - *sgcg
   - in:
@@ -87,6 +110,7 @@ displacements:
       - *maxTaskPerNode
       - *grainSize
       - *low-pass
+      - *is-debug
     programs:
       - *sgcg
       - *taskGenerator
@@ -102,6 +126,7 @@ displacements:
       - *maxTaskPerNode
       - *grainSize
       - *low-pass
+      - *is-debug
     programs:
       - *sgcg
       - *taskGenerator

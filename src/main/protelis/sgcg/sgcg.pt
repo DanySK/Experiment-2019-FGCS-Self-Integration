@@ -35,6 +35,7 @@ public def fastG(source, sourceLevel, initial, metric, accumulate) {
 public def nbrRangeDelta() = self.nbrRange() + 0.1
 
 def debug(name, value) = optionally(env.get("debug"))
+	.filter { it }
 	.map { env.put(name, value) }
 
 // Constants
