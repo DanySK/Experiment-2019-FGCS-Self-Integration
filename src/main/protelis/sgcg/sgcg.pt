@@ -38,6 +38,11 @@ def debug(name, value) = optionally(env.get("debug"))
 	.filter { it }
 	.map { env.put(name, value) }
 
+def debugField(name, value) = optionally(env.get("debug"))
+	.filter { it }
+	.map { env.putField(name, value) }
+
+
 // Constants
 let myid = self.getDeviceUID().getId()
 let networkCost = 0.01
@@ -69,7 +74,7 @@ env.put("capacity", capacity)
 
 // Distance between nodes changes with available computational power
 let metric = mux (nbr(myid) == myid) { 0 } else { min(capacity, nbr(capacity)) + networkCost }
-debug("metric", metric)
+debugField("metric", metric)
 update(self.getDeltaTime() * 100)
 
 // Tasks successfully completed on this network node
@@ -90,7 +95,7 @@ debug("justCompleted", justCompleted)
 env.put("done", optionally(env.get("done")).orElse(0) + justCompleted.size())
 // Waiting tasks generated here
 let waiting = previouslyWaiting.subtract(justCompleted)
-debug("waiting", waiting)
+env.put("waiting", waiting.size())
 cleanupCompletedTasks(justCompleted)
 
 // Domain separatation

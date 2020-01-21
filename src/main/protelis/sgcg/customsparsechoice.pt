@@ -33,7 +33,7 @@ public def election(preference, uid, grain, metric) {
 	let time = self.getCurrentTime()
 	share (lead, nbrLead <- [preference, uid, 0, time]) {
 //		env.put("lead", lead)
-//		let lastUpdate = foldMax(0, nbrLead.get(3))
+		let lastUpdate = foldMax(0, nbrLead.get(3))
 //		env.put("lastUpdate", lastUpdate)
 //		env.putField("nbrLead", nbrLead)
 		let myCandidate = [preference, uid, 0, time]
@@ -44,7 +44,7 @@ public def election(preference, uid, grain, metric) {
 //		env.putField("updated", updated)
 		let filtered =
 			mux(withDistance.get(2) < grain // condition on space
-//				&& withDistance.get(3) > lastUpdate - 2 * self.getDeltaTime() // condition on time (recent update)
+				&& withDistance.get(3) > lastUpdate - 5 * self.getDeltaTime() // condition on time (recent update)
 			) {
 				updated
 			} else {

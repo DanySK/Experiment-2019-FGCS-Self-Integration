@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.ByteArrayOutputStream
 
 /*
  * DEFAULT GRADLE BUILD FOR ALCHEMIST SIMULATOR
@@ -45,10 +46,36 @@ val alchemistGroup = "Run Alchemist"
 /*
  * This task is used to run all experiments in sequence
  */
-val runAll by tasks.register<DefaultTask>("runAll") {
+val showAll by tasks.register<DefaultTask>("showAll") {
     group = alchemistGroup
-    description = "Launches all simulations"
+    description = "Launches all simulations in graphic mode (unless the CI environment variable is set to \"true\")"
 }
+val runAllExperiments by tasks.register<DefaultTask>("runAllExperiments") {
+    group = alchemistGroup
+    description = "Launches all simulations in batch mode, reproducing the experiment"
+}
+
+// Heap size estimation for batches
+val maxHeap: Long? by project
+val heap: Long = maxHeap ?:
+    if (System.getProperty("os.name").toLowerCase().contains("linux")) {
+        ByteArrayOutputStream().use { output ->
+            exec {
+                executable = "bash"
+                args = listOf("-c", "cat /proc/meminfo | grep MemAvailable | grep -o '[0-9]*'")
+                standardOutput = output
+            }
+            output.toString().trim().toLong() / 1024
+        }
+        .also { println("Detected ${it}MB RAM available.") }  * 9 / 10
+    } else {
+        // Guess 16GB RAM of which 2 used by the OS
+        14 * 1024L
+    }
+val taskSizeFromProject: Int? by project
+val taskSize = taskSizeFromProject ?: 512
+val threadCount = maxOf(1, minOf(Runtime.getRuntime().availableProcessors(), heap.toInt() / taskSize ))
+
 /*
  * Scan the folder with the simulation files, and create a task for each one of them.
  */
@@ -56,7 +83,7 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
     .filter { it.extension == "yml" }
     .sortedBy { it.nameWithoutExtension }
     .forEach {
-        val task by tasks.register<JavaExec>("run${it.nameWithoutExtension.capitalize()}") {
+        fun basetask(name: String, additionalConfiguration: JavaExec.() -> Unit = {}) = tasks.register<JavaExec>(name) {
             group = alchemistGroup
             description = "Launches simulation ${it.nameWithoutExtension}"
             main = "it.unibo.alchemist.Alchemist"
@@ -68,8 +95,19 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
             if (System.getenv("CI") == "true") {
                 args("-hl", "-t", "10")
             }
+            this.additionalConfiguration()
+        }
+        val capitalizedName = it.nameWithoutExtension.capitalize()
+        val basetask by basetask("show$capitalizedName")
+        val batchTask by basetask("run$capitalizedName") {
+            description = "Launches batch experiments for $capitalizedName"
+            val variables = listOf("seed", "meanTaskSize", "smoothing", "grain", "peakFrequency")
+            args(
+                "-b",
+                "-var"
+            )
         }
         // task.dependsOn(classpathJar) // Uncomment to switch to jar-based cp resolution
-        runAll.dependsOn(task)
+        showAll.dependsOn(basetask)
     }
 

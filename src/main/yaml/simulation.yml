@@ -2,7 +2,8 @@ incarnation: protelis
 
 variables:
   meanTaskSize: &meanTaskSize
-    formula: 1000.0
+    type: ArbitraryVariable
+    parameters: [1000, [1, 10, 100, 1000, 10000]]
   serverCount: &serverCount
     formula: 10
   desktopCount: &desktopCount
@@ -10,32 +11,59 @@ variables:
   socCount: &socCount
     formula: 100
   maxTasks: &maxTasks
-    formula: 50
+    formula: 10
   baseFrequency: &baseFrequency
-    formula: 0.01
+    formula: 0.001
   peakFrequency: &peakFrequency
-    formula: 1
+    type: ArbitraryVariable
+    parameters: [1, [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1]]
   # Traffic peak
   peakStart: &peakStart
     formula: 100
-  peakend: &peakEnd
-    formula: peakStart + 300
+  peakDuration:
+    formula: 300
+  peakEnd: &peakEnd
+    formula: peakStart + peakDuration
+  stabilizationTime:
+    formula: 200
+  simulationEnd: &simulationEnd
+    formula: peakEnd + stabilizationTime
   # Grain size in MIPS
   grain: &grain
-    formula: 1500
+    min: 1300
+    max: 1700
+    step: 100
+    default: 1500
   # Low pass filter parameter
   smoothing: &smoothing
-    formula: 0.1
+    type: ArbitraryVariable
+    parameters: [0.01, [0.01, 0.03, 0.1, 0.3, 0.9]]
   debug: &debug
     formula: "false"
   seed: &seed
     min: 0
-    max: 0
+    max: 9
     step: 1
     default: 0
 
+terminate:
+  - type: AfterTime
+    parameters: [*simulationEnd]
+
 export:
   - time
+  - molecule: done
+    aggregators: [sum]
+    value-filter: onlyfinite
+  - molecule: drop
+    aggregators: [sum]
+    value-filter: onlyfinite
+  - molecule: waiting
+    aggregators: [sum]
+    value-filter: onlyfinite
+  - molecule: isLeader
+    aggregators: [sum]
+    value-filter: onlyfinite
   - molecule: capacity
     aggregators: [mean]
     value-filter: onlyfinite
@@ -44,9 +72,6 @@ export:
     value-filter: onlyfinite
   - molecule: maxCapacity
     aggregators: [mean]
-    value-filter: onlyfinite
-  - molecule: done
-    aggregators: [sum]
     value-filter: onlyfinite
 
 seeds:
@@ -98,6 +123,8 @@ displacements:
       - *grainSize
       - *low-pass
       - *is-debug
+      - molecule: drop
+        concentration: 0
     programs:
       - *sgcg
   - in:
