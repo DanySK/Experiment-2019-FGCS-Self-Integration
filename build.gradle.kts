@@ -31,7 +31,7 @@ sourceSets {
 }
 dependencies {
     // it is highly recommended to replace the '+' symbol with a fixed version
-    implementation("it.unibo.alchemist:alchemist:+")
+    implementation("it.unibo.alchemist:alchemist:9.3.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.3.60")
     implementation("com.uchuhimo:konf-core:+")
     implementation("com.uchuhimo:konf-yaml:+")
@@ -101,13 +101,14 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
         val basetask by basetask("show$capitalizedName")
         val batchTask by basetask("run$capitalizedName") {
             description = "Launches batch experiments for $capitalizedName"
-            val variables = listOf("seed", "meanTaskSize", "smoothing", "grain", "peakFrequency")
+            val variables = listOf("seed", "meanTaskSize", "smoothing", "grain", "peakFrequency").toTypedArray()
             args(
                 "-b",
-                "-var"
+                "-var", *variables,
+                "-p", threadCount
             )
         }
-        // task.dependsOn(classpathJar) // Uncomment to switch to jar-based cp resolution
+        runAllExperiments.dependsOn(batchTask)
         showAll.dependsOn(basetask)
     }
 
