@@ -101,6 +101,9 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
         val basetask by basetask("show$capitalizedName")
         val batchTask by basetask("run$capitalizedName") {
             description = "Launches batch experiments for $capitalizedName"
+            jvmArgs("-XX:+AggressiveHeap")
+            maxHeapSize = "${heap}m"
+            File("data").mkdirs()
             val variables = listOf("seed", "meanTaskSize", "smoothing", "grain", "peakFrequency").toTypedArray()
             args(
                 "-e", "data/${it.nameWithoutExtension}",

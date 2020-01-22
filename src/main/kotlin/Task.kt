@@ -42,12 +42,8 @@ val ExecutionContext.scheduler: Scheduler get() = when (this) {
                         require(taskmanagers.size < maxEnvironmentsInMemory) {
                             "Memory leak or excessive parallelism detected: ${taskmanagers.size} environments are in memory, but only $maxEnvironmentsInMemory cores are available on this machine."
                         }
-                        println("Creating support for a new environment: $it")
                         // Upon creation of a new map, also clean up the global cache
                         println("Global cleanup started, currently ${taskmanagers.size}/$maxEnvironmentsInMemory environments in memory")
-                        taskmanagers.forEach {
-                            println(it)
-                        }
                         taskmanagers.entries.removeIf { (environment, _) ->
                             (environment.getSimulation().getStatus() == Status.TERMINATED).also {
                                 if (it) {
