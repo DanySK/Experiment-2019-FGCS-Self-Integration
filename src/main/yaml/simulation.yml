@@ -11,7 +11,7 @@ variables:
   socCount: &socCount
     formula: 100
   maxTasks: &maxTasks
-    formula: 10
+    formula: 20
   baseFrequency: &baseFrequency
     formula: 0.001
   peakFrequency: &peakFrequency
