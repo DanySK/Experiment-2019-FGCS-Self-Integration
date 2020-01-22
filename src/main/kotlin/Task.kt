@@ -1,15 +1,12 @@
 import com.uchuhimo.konf.Config
 import com.uchuhimo.konf.ConfigSpec
-import com.uchuhimo.konf.emptyMutableMap
 import com.uchuhimo.konf.source.yaml
+import it.unibo.alchemist.core.interfaces.Status
 import it.unibo.alchemist.model.interfaces.Environment
 import it.unibo.alchemist.protelis.AlchemistExecutionContext
-import javafx.application.Application.launch
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import org.protelis.lang.datatype.DatatypeFactory
 import org.protelis.lang.datatype.Field
 import org.protelis.lang.datatype.Tuple
@@ -17,7 +14,6 @@ import org.protelis.vm.ExecutionContext
 import java.lang.IllegalStateException
 import java.util.Collections
 import java.util.WeakHashMap
-import kotlin.math.min
 
 //@file:JvmName("Tasks")
 typealias Instructions = Long
@@ -37,11 +33,30 @@ val cpus: Map<String, CPU> = Config {
         else -> throw IllegalStateException("Multiple CPUs specified for type $type: $cpulist")
     } }
 private val mutex = Mutex()
+val maxEnvironmentsInMemory = 3 * Runtime.getRuntime().availableProcessors() / 2
 val ExecutionContext.scheduler: Scheduler get() = when (this) {
         is AlchemistExecutionContext<*> -> runBlocking {
             mutex.withLock {
                 taskmanagers
-                    .computeIfAbsent(getEnvironmentAccess()) { mutableMapOf() }
+                    .computeIfAbsent(getEnvironmentAccess()) {
+                        require(taskmanagers.size < maxEnvironmentsInMemory) {
+                            "Memory leak or excessive parallelism detected: ${taskmanagers.size} environments are in memory, but only $maxEnvironmentsInMemory cores are available on this machine."
+                        }
+                        println("Creating support for a new environment: $it")
+                        // Upon creation of a new map, also clean up the global cache
+                        println("Global cleanup started, currently ${taskmanagers.size}/$maxEnvironmentsInMemory environments in memory")
+                        taskmanagers.forEach {
+                            println(it)
+                        }
+                        taskmanagers.entries.removeIf { (environment, _) ->
+                            (environment.getSimulation().getStatus() == Status.TERMINATED).also {
+                                if (it) {
+                                    println("Simulation for $environment terminated, removing from cache")
+                                }
+                            }
+                        }
+                        mutableMapOf()
+                    }
                     .computeIfAbsent(this@scheduler) {
                         val type = executionEnvironment["cpuType"]
                             ?: throw IllegalStateException("No cpuType specified for node $deviceUID")
