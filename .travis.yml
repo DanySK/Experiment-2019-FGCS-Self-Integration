@@ -5,7 +5,7 @@ addons:
   apt:
     update: true
     packages:
-      - pyenv
+#      - pyenv
   homebrew:
     packages:
       - pyenv
@@ -27,6 +27,7 @@ install:
   - travis_retry source .install-jdk-travis.sh
   - (travis_retry choco install pyenv-win) || true
   - python --version
+  - pyenv
 script: travis_retry "./gradlew" "showAll" "||" "sleep" "30" "&&" false"
 before_cache:
   - travis_retry curl "${GRAVIS}.clean_gradle_cache.sh" --output .clean_gradle_cache.sh
