@@ -28,7 +28,7 @@ install:
   - (travis_retry choco install pyenv-win) || true
   - python --version
   - exec $SHELL
-  - pyenv
+  - pyenv --help
 script: ./gradlew showAll || sleep 30 && ./gradlew showAll || sleep 30 && ./gradlew showAll
 before_cache:
   - travis_retry curl "${GRAVIS}.clean_gradle_cache.sh" --output .clean_gradle_cache.sh
