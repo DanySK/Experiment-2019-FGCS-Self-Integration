@@ -26,6 +26,7 @@ install:
   - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
   - travis_retry source .install-jdk-travis.sh
   - (travis_retry choco install pyenv-win) || true
+  - [ -x "$(command -v pyenv)" ] || alias pyenv="$HOME/.pyenv/pyenv-win/bin/pyenv"
   - python --version
   - source ~/.bashrc
   - pyenv --help
