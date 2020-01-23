@@ -31,8 +31,7 @@ install:
   - source ~/.bashrc
   - pyenv --help
 script:
-  - export TO_EXEC="./gradlew showAll --parallel"
-  - $TO_EXEC || (sleep 30 && ($TO_EXEC || (sleep 30 && $TO_EXEC)))
+  - travis_retry ./gradlew clean showAll --parallel
 before_cache:
   - travis_retry curl "${GRAVIS}.clean_gradle_cache.sh" --output .clean_gradle_cache.sh
   - travis_retry bash .clean_gradle_cache.sh
