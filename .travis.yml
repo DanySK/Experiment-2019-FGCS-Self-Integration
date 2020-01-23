@@ -17,12 +17,12 @@ env:
     - JDK="adopt@1.13"
     - JDK="adopt-openj9@1.13"
 install:
-  - curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
-  - source .install-jdk-travis.sh
-script: ./gradlew showAll
+  - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
+  - travis_retry source .install-jdk-travis.sh
+script: travis_retry ./gradlew showAll
 before_cache:
-  - curl "${GRAVIS}.clean_gradle_cache.sh" --output .clean_gradle_cache.sh
-  - bash .clean_gradle_cache.sh
+  - travis_retry curl "${GRAVIS}.clean_gradle_cache.sh" --output .clean_gradle_cache.sh
+  - travis_retry bash .clean_gradle_cache.sh
 cache:
   directories:
     - $HOME/.gradle/caches/
