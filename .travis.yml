@@ -1,6 +1,14 @@
 language: bash
 git:
   depth: false
+addons:
+  apt:
+    update: true
+    packages:
+      - pyenv
+  homebrew:
+    packages:
+      - pyenv
 os:
   - osx
   - windows
@@ -12,13 +20,13 @@ env:
   matrix:
     - JDK="adopt@1.11"
     - JDK="adopt-openj9@1.11"
-    - JDK="adopt@1.12"
-    - JDK="adopt-openj9@1.12"
-    - JDK="adopt@1.13"
-    - JDK="adopt-openj9@1.13"
+    - JDK="adopt@" # Should test the latest
+    - JDK="adopt-openj9@"
 install:
-  - curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
-  - source .install-jdk-travis.sh
+  - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
+  - travis_retry source .install-jdk-travis.sh
+  - choco install pyenv-win || true
+  - python --version
 script: ./gradlew showAll
 before_cache:
   - curl "${GRAVIS}.clean_gradle_cache.sh" --output .clean_gradle_cache.sh
