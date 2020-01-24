@@ -110,3 +110,4 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
     - $HOME/.pyenv
+    - $PYENV_ROOT
