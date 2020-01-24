@@ -26,6 +26,10 @@ env:
 
 # Utilities
 
+_python_reference_version: &python_reference_version PYTHON="3.6.3"
+_python_reference: &python_reference
+  env: *python_reference_version
+
 _deploy_base: &deploy_base
   provider: releases
   edge: true
