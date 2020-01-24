@@ -21,8 +21,9 @@ env:
     - JDK="adopt@" # Should test the latest
     - JDK="adopt-openj9@"
 stages:
-  - test
-  - charts
+  - name: test
+    if: tag is blank
+  - name: charts
 jobs:
   include:
     - stage: charts
@@ -32,6 +33,11 @@ jobs:
         - pip install --upgrade pip
         - pip install -r requirements.txt
       script: travis_wait python process.py
+      before_deploy:
+        - tar -czvf "charts.tar.gz" $TRAVIS_BUILD_DIR/charts/
+        - git config --local user.name "Danilo Pianini"
+        - git config --local user.email "danilo.pianini@unibo.it"
+        - git describe --exact-match HEAD || git tag $(git log -n1 --date=format:'%Y-%m-%dT%H%m%S' --format=%cd)
 before_install: true
 install:
   - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
