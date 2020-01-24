@@ -45,6 +45,7 @@ stages:
   - name: test
     if: type = cron OR tag is blank AND NOT commit_message =~ /\[AUTOMATIC.*\].*/
   - name: charts
+    if: tag is blank OR NOT commit_message =~ /\[AUTOMATIC.*\].*/
 jobs:
   include:
     - stage: charts
