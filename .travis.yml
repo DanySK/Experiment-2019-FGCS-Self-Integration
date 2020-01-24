@@ -57,8 +57,7 @@ _make_charts: &make_charts
   stage: charts
   install:
     - curl "${GRAVIS}.install-python.sh" | bash
-    - python -m venv venv
-    - source venv/bin/activate
+    - pyenv versions
     - pip install --upgrade pip
     - pip install -r requirements.txt
   script: travis_wait python process.py
