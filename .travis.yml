@@ -57,6 +57,7 @@ _make_charts: &make_charts
   stage: charts
   install:
     - curl "${GRAVIS}.install-python.sh" | bash
+    - pyenv versions
     - pip install --upgrade pip
     - pip install -r requirements.txt
   script: travis_wait python process.py
@@ -110,3 +111,4 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
     - $HOME/.pyenv
+    - $PYENV_ROOT
