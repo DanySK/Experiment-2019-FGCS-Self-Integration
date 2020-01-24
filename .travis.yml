@@ -33,6 +33,8 @@ _python_reference: &python_reference
 _repo_filter: &repo_filter
   repo: DanySK/Experiment-2019-FGCS-Self-Integration
 
+_os_filter: &os_filter
+  condition: $TRAVIS_OS_NAME = linux
 
 _deploy_base: &deploy_base
   provider: releases
