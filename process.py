@@ -166,7 +166,7 @@ if __name__ == '__main__':
     timeSamples = 600
     # time management
     minTime = 0
-    maxTime = 900
+    maxTime = 600
     timeColumnName = 'time'
     logarithmicTime = False
     # One or more variables are considered random and "flattened"
@@ -281,7 +281,7 @@ if __name__ == '__main__':
         return (fig, ax)
     for experiment in experiments:
         current_experiment_means = means[experiment]
-        for comparison_variable in current_experiment_means.coords:
+        for comparison_variable in set(current_experiment_means.coords) - {timeColumnName}:
             mergeable_variables = set(current_experiment_means.coords) - {timeColumnName, comparison_variable}
             for current_coordinate in mergeable_variables:
                 merge_variables = mergeable_variables - { current_coordinate }
