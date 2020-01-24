@@ -30,7 +30,7 @@ _deploy_base: &deploy_base
   provider: releases
   edge: true
   file:
-    - "${TRAVIS_BUILD_DIR}/charts/*.tar.gz"
+    - "${TRAVIS_BUILD_DIR}/*.tar.gz"
     - "${TRAVIS_BUILD_DIR}/charts/*.pdf"
 _repo_filter: &repo_filter
   repo: DanySK/Experiment-2019-FGCS-Self-Integration
