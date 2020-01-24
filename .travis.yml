@@ -33,9 +33,6 @@ _python_reference: &python_reference
 _repo_filter: &repo_filter
   repo: DanySK/Experiment-2019-FGCS-Self-Integration
 
-_os_filter: &os_filter
-  condition: $TRAVIS_OS_NAME = linux
-
 _deploy_base: &deploy_base
   provider: releases
   edge: true
@@ -46,11 +43,24 @@ _deploy_base: &deploy_base
     <<: *repo_filter
     tags: true
 
+_os_filter: &os_filter
+  condition: $TRAVIS_OS_NAME = linux
+
 _auto_tag: &auto_tag >
     git describe --tags --exact-match HEAD
     || (TAGNAME=$(git describe) && git tag $TAGNAME)
     || git tag "0.1.0-$(git log -n1 --date=format:'%Y-%m-%dT%H%m%S' --format=%cd)"
 
+_make_charts: &make_charts
+  os: linux
+  language: minimal
+  stage: charts
+  install:
+    - curl "${GRAVIS}.install-python.sh" | bash
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+  script: travis_wait python process.py
+    
 # Process
 
 stages:
@@ -60,13 +70,18 @@ stages:
     if: tag is blank OR NOT commit_message =~ /\[AUTOMATIC.*\].*/
 jobs:
   include:
-    - stage: charts
-      os: linux
-      install:
-        - curl "${GRAVIS}.install-python.sh" | bash
-        - pip install --upgrade pip
-        - pip install -r requirements.txt
-      script: travis_wait python process.py
+    # Latest Python on OSX
+    - <<: *make_charts
+      os: osx
+    # Python 3.6.3 on OSX
+    - <<: *python_reference
+      <<: *make_charts
+      os: osx
+    # Latest Python on Linux
+    - <<: *make_charts
+    # Python 3.6.3 on Linux with deployment
+    - <<: *make_charts
+      <<: *python_reference
       before_deploy:
         - tar -czvf "charts.tar.gz" $TRAVIS_BUILD_DIR/charts/
         - git config --local user.name "Danilo Pianini"
@@ -78,10 +93,6 @@ jobs:
            <<: *repo_filter
            tags: false
        - <<: *deploy_base
-         on:
-           <<: *repo_filter
-           tags: true
-
 
 # Common
 
