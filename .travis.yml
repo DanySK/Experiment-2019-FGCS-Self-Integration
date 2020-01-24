@@ -55,7 +55,10 @@ jobs:
         - tar -czvf "charts.tar.gz" $TRAVIS_BUILD_DIR/charts/
         - git config --local user.name "Danilo Pianini"
         - git config --local user.email "danilo.pianini@unibo.it"
-        - git describe --exact-match HEAD || git tag $(git log -n1 --date=format:'%Y-%m-%dT%H%m%S' --format=%cd)
+        - >
+        git describe --tags --exact-match HEAD
+        || (TAGNAME=$(git describe) && git tag $TAGNAME)
+        || git tag "0.1.0-$(git log -n1 --date=format:'%Y-%m-%dT%H%m%S' --format=%cd)"
       deploy:
        - <<: *deploy_base
          on:
