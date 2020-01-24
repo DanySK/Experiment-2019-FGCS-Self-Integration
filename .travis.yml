@@ -30,6 +30,10 @@ _python_reference_version: &python_reference_version PYTHON="3.6.3"
 _python_reference: &python_reference
   env: *python_reference_version
 
+_repo_filter: &repo_filter
+  repo: DanySK/Experiment-2019-FGCS-Self-Integration
+
+
 _deploy_base: &deploy_base
   provider: releases
   edge: true
@@ -39,9 +43,6 @@ _deploy_base: &deploy_base
   on:
     <<: *repo_filter
     tags: true
-
-_repo_filter: &repo_filter
-  repo: DanySK/Experiment-2019-FGCS-Self-Integration
 
 _auto_tag: &auto_tag >
     git describe --tags --exact-match HEAD
