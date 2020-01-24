@@ -26,13 +26,13 @@ env:
 
 # Utilities
 
-deploy_base: &deploy_base
+_deploy_base: &deploy_base
   provider: releases
-    edge: true
-    file:
-      - "${TRAVIS_BUILD_DIR}/charts/*.tar.gz"
-      - "${TRAVIS_BUILD_DIR}/charts/*.pdf"
-repo_filter: &repo_filter
+  edge: true
+  file:
+    - "${TRAVIS_BUILD_DIR}/charts/*.tar.gz"
+    - "${TRAVIS_BUILD_DIR}/charts/*.pdf"
+_repo_filter: &repo_filter
   repo: DanySK/Experiment-2019-FGCS-Self-Integration
 
 
@@ -57,14 +57,14 @@ jobs:
         - git config --local user.email "danilo.pianini@unibo.it"
         - git describe --exact-match HEAD || git tag $(git log -n1 --date=format:'%Y-%m-%dT%H%m%S' --format=%cd)
       deploy:
-        - <<: *deploy_base
-          on:
-            <<: *repo_filter
-            tags: false
-        - <<: *deploy_base
-          on:
-            <<: *repo_filter
-            tags: true
+       - <<: *deploy_base
+         on:
+           <<: *repo_filter
+           tags: false
+       - <<: *deploy_base
+         on:
+           <<: *repo_filter
+           tags: true
 
 
 # Common
