@@ -113,3 +113,8 @@ cache:
     - $HOME/.gradle/wrapper/
     - $HOME/.pyenv
     - $PYENV_ROOT
+notifications:
+  email:
+    if: branch = master
+    on_success: never
+    on_failure: change
