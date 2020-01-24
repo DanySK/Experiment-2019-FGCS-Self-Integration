@@ -36,8 +36,13 @@ _deploy_base: &deploy_base
   file:
     - "${TRAVIS_BUILD_DIR}/*.tar.gz"
     - "${TRAVIS_BUILD_DIR}/charts/*.pdf"
+  on:
+    <<: *repo_filter
+    tags: true
+
 _repo_filter: &repo_filter
   repo: DanySK/Experiment-2019-FGCS-Self-Integration
+
 _auto_tag: &auto_tag >
     git describe --tags --exact-match HEAD
     || (TAGNAME=$(git describe) && git tag $TAGNAME)
