@@ -32,10 +32,7 @@ jobs:
         - pip install --upgrade pip
         - pip install -r requirements.txt
       script: travis_wait python process.py
-before_install:
-  # Print IP address if possible, so to provide data in case of Maven Central 403
-  # See: https://issues.sonatype.org/browse/MVNCENTRAL-4985
-  - (ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1') || true
+before_install: true
 install:
   - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
   - travis_retry source .install-jdk-travis.sh
