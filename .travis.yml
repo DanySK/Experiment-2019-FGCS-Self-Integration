@@ -108,6 +108,7 @@ before_cache:
   - travis_retry curl "${GRAVIS}.clean_gradle_cache.sh" --output ~/.clean_gradle_cache.sh
   - travis_retry bash ~/.clean_gradle_cache.sh
 cache:
+  branch: no-symlink
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
