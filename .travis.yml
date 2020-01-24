@@ -40,7 +40,7 @@ _repo_filter: &repo_filter
 
 stages:
   - name: test
-    if: tag is blank
+    if: tag is blank AND NOT commit_message =~ /\[AUTOMATIC.*\].*/
   - name: charts
 jobs:
   include:
