@@ -1,3 +1,4 @@
+# System
 language: bash
 git:
   depth: false
@@ -20,6 +21,17 @@ env:
     - JDK="adopt-openj9@1.11"
     - JDK="adopt@" # Should test the latest
     - JDK="adopt-openj9@"
+
+# Utilities
+deploy_base: &deploy_base
+  provider: releases
+    edge: true
+    file:
+      - "${TRAVIS_BUILD_DIR}/charts/*.tar.gz"
+      - "${TRAVIS_BUILD_DIR}/charts/*.pdf"
+repo_filter: &repo_filter
+  repo: DanySK/Experiment-2019-FGCS-Self-Integration
+# Process
 stages:
   - name: test
     if: tag is blank
@@ -38,6 +50,15 @@ jobs:
         - git config --local user.name "Danilo Pianini"
         - git config --local user.email "danilo.pianini@unibo.it"
         - git describe --exact-match HEAD || git tag $(git log -n1 --date=format:'%Y-%m-%dT%H%m%S' --format=%cd)
+      deploy:
+        - <<: *deploy_base
+          on:
+            <<: *repo_filter
+            tags: false
+        - <<: *deploy_base
+          on:
+            <<: *repo_filter
+            tags: true
 before_install: true
 install:
   - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
