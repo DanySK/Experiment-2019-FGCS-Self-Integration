@@ -4,8 +4,6 @@ git:
 addons:
   apt:
     update: true
-    packages:
-#      - pyenv
   homebrew:
     packages:
       - pyenv
@@ -22,14 +20,25 @@ env:
     - JDK="adopt-openj9@1.11"
     - JDK="adopt@" # Should test the latest
     - JDK="adopt-openj9@"
+stages:
+  - test
+  - charts
+jobs:
+  include:
+    - stage: charts
+      os: linux
+      install:
+        - curl "${GRAVIS}.install-python.sh | bash
+        - pip install --upgrade pip
+        - pip install -r requirements.txt
+      script: travis_wait python process.py
+before_install:
+  # Print IP address if possible, so to provide data in case of Maven Central 403
+  # See: https://issues.sonatype.org/browse/MVNCENTRAL-4985
+  - (ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1') || true
 install:
   - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
   - travis_retry source .install-jdk-travis.sh
-  - (travis_retry choco install pyenv-win) || true
-  - '[ -x "$(command -v pyenv)" ] || alias pyenv="$HOME/.pyenv/pyenv-win/bin/pyenv"'
-  - python --version
-  - source ~/.bashrc
-  - pyenv --help
 script:
   - travis_retry ./gradlew clean showAll --parallel
 before_cache:
