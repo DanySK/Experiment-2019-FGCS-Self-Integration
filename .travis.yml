@@ -56,7 +56,8 @@ _make_charts: &make_charts
   language: minimal
   stage: charts
   install:
-    - curl "${GRAVIS}.install-python.sh" | bash
+    - curl "${GRAVIS}.install-python.sh" --output ~/.install-python.sh
+    - source ~/.install-python.sh
     - pyenv versions
     - pip install --upgrade pip
     - pip install -r requirements.txt
@@ -99,13 +100,13 @@ jobs:
 
 before_install: true
 install:
-  - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
-  - travis_retry source .install-jdk-travis.sh
+  - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output ~/.install-jdk-travis.sh
+  - travis_retry source ~/.install-jdk-travis.sh
 script:
   - travis_retry ./gradlew clean showAll --parallel
 before_cache:
-  - travis_retry curl "${GRAVIS}.clean_gradle_cache.sh" --output .clean_gradle_cache.sh
-  - travis_retry bash .clean_gradle_cache.sh
+  - travis_retry curl "${GRAVIS}.clean_gradle_cache.sh" --output ~/.clean_gradle_cache.sh
+  - travis_retry bash ~/.clean_gradle_cache.sh
 cache:
   directories:
     - $HOME/.gradle/caches/
