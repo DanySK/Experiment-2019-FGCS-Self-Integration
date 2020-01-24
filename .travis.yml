@@ -69,16 +69,16 @@ stages:
     if: tag is blank OR NOT commit_message =~ /\[AUTOMATIC.*\].*/
 jobs:
   include:
-    # Latest Python on OSX
-    - <<: *make_charts
-      os: osx
-    # Python 3.6.3 on OSX
-    - <<: *python_reference
-      <<: *make_charts
-      os: osx
-    # Latest Python on Linux
-    - <<: *make_charts
-    # Python 3.6.3 on Linux with deployment
+    ## Latest Python on OSX
+    #- <<: *make_charts
+      #os: osx
+    ## Python 3.6.3 on OSX
+    #- <<: *python_reference
+      #<<: *make_charts
+      #os: osx
+    ## Latest Python on Linux
+    #- <<: *make_charts
+    ## Python 3.6.3 on Linux with deployment
     - <<: *make_charts
       <<: *python_reference
       before_deploy:
