@@ -9,3 +9,6 @@ test.txt
 .classpath
 .project
 data/
+charts/
+data_*
+timeprocessed

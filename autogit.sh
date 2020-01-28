@@ -5,6 +5,8 @@ for file in data/*
     then git add -f "${file}"
   fi
 done
-git commit -m "[AUTOMATIC ${USER}@${HOSTNAME}] - Data generated up to `date --iso-8601=seconds`"
-git pull --no-edit
+COMMIT_MESSAGE="[AUTOMATIC ${USER}@${HOSTNAME}] - `date --iso-8601=minutes` data update"
+git commit -m "${COMMIT_MESSAGE}"
+git fetch
+git merge FETCH_HEAD -m "$COMMIT_MESSAGE (merge commit)"
 git push

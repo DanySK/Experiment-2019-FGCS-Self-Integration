@@ -1,6 +1,14 @@
+# System
+if: NOT commit_message =~ /\[\s*SKIP(_|-|\s*)BUILD.*\].*/
 language: bash
 git:
   depth: false
+addons:
+  apt:
+    update: true
+  homebrew:
+    packages:
+      - pyenv
 os:
   - osx
   - windows
@@ -12,18 +20,104 @@ env:
   matrix:
     - JDK="adopt@1.11"
     - JDK="adopt-openj9@1.11"
-    - JDK="adopt@1.12"
-    - JDK="adopt-openj9@1.12"
-    - JDK="adopt@1.13"
-    - JDK="adopt-openj9@1.13"
+    - JDK="adopt@" # Should test the latest
+    - JDK="adopt-openj9@"
+
+
+# Utilities
+
+_python_reference_version: &python_reference_version PYTHON="3.6.3"
+_python_reference: &python_reference
+  env: *python_reference_version
+
+_repo_filter: &repo_filter
+  repo: DanySK/Experiment-2019-FGCS-Self-Integration
+
+_deploy_base: &deploy_base
+  provider: releases
+  edge: true
+  file:
+    - "${TRAVIS_BUILD_DIR}/*.tar.gz"
+    - "${TRAVIS_BUILD_DIR}/charts/*.pdf"
+  on:
+    <<: *repo_filter
+    tags: true
+
+_os_filter: &os_filter
+  condition: $TRAVIS_OS_NAME = linux
+
+_auto_tag: &auto_tag >
+    git describe --tags --exact-match HEAD
+    || (TAGNAME=$(git describe) && git tag $TAGNAME)
+    || git tag "0.1.0-$(git log -n1 --date=format:'%Y-%m-%dT%H%m%S' --format=%cd)"
+
+_make_charts: &make_charts
+  os: linux
+  language: minimal
+  stage: charts
+  install:
+    - curl "${GRAVIS}.install-python.sh" --output ~/.install-python.sh
+    - source ~/.install-python.sh
+    - pyenv versions
+    - pip install --upgrade pip
+    - pip install -r requirements.txt
+  script: travis_wait python process.py
+
+
+# Process
+
+stages:
+  - name: test
+    if: type = cron OR tag is blank AND NOT commit_message =~ /\[(AUTOMATIC|CHARTS|DATA).*\].*/
+  - name: charts
+    if: tag is blank OR NOT commit_message =~ /\[AUTOMATIC.*\].*/
+jobs:
+  include:
+    # Latest Python on OSX
+    - <<: *make_charts
+      os: osx
+    # Python 3.6.3 on OSX
+    - <<: *python_reference
+      <<: *make_charts
+      os: osx
+    # Latest Python on Linux
+    - <<: *make_charts
+    # Python 3.6.3 on Linux with deployment
+    - <<: *make_charts
+      <<: *python_reference
+      before_deploy:
+        - tar -czvf "charts.tar.gz" $TRAVIS_BUILD_DIR/charts/
+        - git config --local user.name "Danilo Pianini"
+        - git config --local user.email "danilo.pianini@unibo.it"
+        - *auto_tag
+      deploy:
+       - <<: *deploy_base
+         on:
+           <<: *repo_filter
+           tags: false
+       - <<: *deploy_base
+
+
+# Common
+
+before_install: true
 install:
-  - curl "${GRAVIS}.install-jdk-travis.sh" --output .install-jdk-travis.sh
-  - source .install-jdk-travis.sh
-script: ./gradlew showAll
+  - travis_retry curl "${GRAVIS}.install-jdk-travis.sh" --output ~/.install-jdk-travis.sh
+  - travis_retry source ~/.install-jdk-travis.sh
+script:
+  - travis_retry ./gradlew clean showAll --parallel
 before_cache:
-  - curl "${GRAVIS}.clean_gradle_cache.sh" --output .clean_gradle_cache.sh
-  - bash .clean_gradle_cache.sh
+  - travis_retry curl "${GRAVIS}.clean_gradle_cache.sh" --output ~/.clean_gradle_cache.sh
+  - travis_retry bash ~/.clean_gradle_cache.sh
 cache:
+  pip: true
   directories:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
+    - $HOME/.pyenv
+    - $PYENV_ROOT
+notifications:
+  email:
+    if: branch = master
+    on_success: never
+    on_failure: change
