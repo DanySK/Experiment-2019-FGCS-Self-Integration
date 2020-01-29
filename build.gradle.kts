@@ -37,8 +37,8 @@ dependencies {
     // it is highly recommended to replace the '+' symbol with a fixed version
     implementation("it.unibo.alchemist:alchemist:9.3.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.3.60")
-    implementation("com.uchuhimo:konf-core:+")
-    implementation("com.uchuhimo:konf-yaml:+")
+    implementation("com.uchuhimo:konf-core:0.22.1")
+    implementation("com.uchuhimo:konf-yaml:0.22.1")
 }
 tasks.withType<KotlinCompile> {
     kotlinOptions {
