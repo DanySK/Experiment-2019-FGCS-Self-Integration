@@ -37,7 +37,7 @@ variables:
   # Low pass filter parameter
   smoothing: &smoothing
     type: ArbitraryVariable
-    parameters: [0.01, [0.01, 0.03, 0.1, 0.3, 0.9]]
+    parameters: [0.1, [0.01, 0.03, 0.1, 0.3, 0.9]]
   debug: &debug
     formula: "false"
   seed: &seed
