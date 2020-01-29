@@ -57,7 +57,7 @@ _make_charts: &make_charts
   stage: charts
   install:
     - curl "${GRAVIS}.install-python.sh" --output ~/.install-python.sh
-    - source ~/.install-python.sh
+    - travis_retry source ~/.install-python.sh
     - pyenv versions
     - pip install --upgrade pip
     - pip install -r requirements.txt
