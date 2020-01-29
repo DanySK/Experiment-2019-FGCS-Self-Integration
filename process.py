@@ -171,6 +171,12 @@ if __name__ == '__main__':
     logarithmicTime = False
     # One or more variables are considered random and "flattened"
     seedVars = ['seed']
+    # Label mapping
+    labels = {
+        'freeCapacity[Mean]': 'available capacity (MIPS)'
+    }
+    def label_for(variable_name):
+        return labels.get(variable_name, variable_name)
     
     # Setup libraries
     np.set_printoptions(formatter={'float': floatPrecision.format})
@@ -290,14 +296,14 @@ if __name__ == '__main__':
                 merge_error_view = current_experiment_errors.mean(dim = merge_variables, skipna = True)
                 for current_coordinate_value in merge_data_view[current_coordinate].values:
                     for current_metric in merge_data_view.data_vars:
-                        title = current_metric + " with " + comparison_variable + " when " + current_coordinate + "=" + str(current_coordinate_value)
+                        title = f'{label_for(current_metric)} with {label_for(comparison_variable)} when {label_for(current_coordinate)}={str(current_coordinate_value)}'
                         for withErrors in [True, False]:
                             fig, ax = make_line_chart(
                                 title = title,
                                 xdata = merge_data_view[timeColumnName],
                                 xlabel = timeColumnName,
                                 ydata = {
-                                    label: (
+                                    label_for(label): (
                                         merge_data_view.sel(selector)[current_metric],
                                         merge_error_view.sel(selector)[current_metric] if withErrors else 0
                                     )
