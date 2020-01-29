@@ -188,7 +188,7 @@ if __name__ == '__main__':
         lastTimeProcessed = pickle.load(open('timeprocessed', 'rb'))
     except:
         lastTimeProcessed = -1
-    shouldRecompute = False # newestFileTime != lastTimeProcessed
+    shouldRecompute = not os.path.exists(".skip_data_process") and newestFileTime != lastTimeProcessed
     if not shouldRecompute:
         try:
             means = pickle.load(open(pickleOutput + '_mean', 'rb'))

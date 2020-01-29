@@ -86,7 +86,7 @@ jobs:
     - <<: *make_charts
       <<: *python_reference
       before_deploy:
-        - tar -czvf "charts.tar.gz" $TRAVIS_BUILD_DIR/charts/
+        - tar -czvf "charts.tar.gz" -C $TRAVIS_BUILD_DIR/charts/ .
         - git config --local user.name "Danilo Pianini"
         - git config --local user.email "danilo.pianini@unibo.it"
         - *auto_tag
@@ -118,6 +118,6 @@ cache:
     - $PYENV_ROOT
 notifications:
   email:
-    if: branch = master
+    if: branch = master AND tag is blank
     on_success: never
     on_failure: change

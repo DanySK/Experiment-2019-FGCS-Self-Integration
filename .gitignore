@@ -12,3 +12,4 @@ data/
 charts/
 data_*
 timeprocessed
+.skip_data_process
