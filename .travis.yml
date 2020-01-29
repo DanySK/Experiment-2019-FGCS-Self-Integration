@@ -48,7 +48,7 @@ _os_filter: &os_filter
 
 _auto_tag: &auto_tag >
     git describe --tags --exact-match HEAD
-    || (TAGNAME=$(git describe) && git tag $TAGNAME)
+    || git tag $(git describe)
     || git tag "0.1.0-$(git log -n1 --date=format:'%Y-%m-%dT%H%m%S' --format=%cd)"
 
 _make_charts: &make_charts
