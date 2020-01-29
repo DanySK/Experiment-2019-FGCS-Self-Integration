@@ -172,11 +172,32 @@ if __name__ == '__main__':
     # One or more variables are considered random and "flattened"
     seedVars = ['seed']
     # Label mapping
+    class Measure:
+        def __init__(self, description, unit = None):
+            self.__description = description
+            self.__unit = unit
+        def description(self):
+            return self.__description
+        def unit(self):
+            return '' if self.__unit is None else f'({self.__unit})'
+        def __str__(self):
+            return f'{self.description()} {self.unit()}'
+            
     labels = {
-        'freeCapacity[Mean]': 'available capacity (MIPS)'
+        'freeCapacity[Mean]': Measure("available capacity", "MIPS"),
+        'capacity[Mean]': Measure("perceived capacity", "MIPS"),
+        'done[Sum]': Measure("completed tasks"),
+        'drop[Sum]': Measure("failed tasks"),
+        'waiting[Sum]': Measure("waiting tasks"),
+        'isLeader[Sum]': Measure("clusters count"),
+        'time': Measure("time", "s"),
+        'grain': Measure("region size", "MIPS"),
+        'peakFrequency': Measure(r'$f_P$', "Hz"),
     }
     def label_for(variable_name):
-        return labels.get(variable_name, variable_name)
+        return labels.get(variable_name, Measure(variable_name)).description()
+    def unit_for(variable_name):
+        return str(labels.get(variable_name, Measure(variable_name)))
     
     # Setup libraries
     np.set_printoptions(formatter={'float': floatPrecision.format})
@@ -296,22 +317,23 @@ if __name__ == '__main__':
                 merge_error_view = current_experiment_errors.mean(dim = merge_variables, skipna = True)
                 for current_coordinate_value in merge_data_view[current_coordinate].values:
                     for current_metric in merge_data_view.data_vars:
-                        title = f'{label_for(current_metric)} with {label_for(comparison_variable)} when {label_for(current_coordinate)}={str(current_coordinate_value)}'
+                        title = f'{label_for(current_metric)} with {label_for(comparison_variable)} when {label_for(current_coordinate)}={current_coordinate_value}'
                         for withErrors in [True, False]:
                             fig, ax = make_line_chart(
                                 title = title,
                                 xdata = merge_data_view[timeColumnName],
-                                xlabel = timeColumnName,
+                                xlabel = unit_for(timeColumnName),
+                                ylabel = unit_for(current_metric),
                                 ydata = {
-                                    label_for(label): (
+                                    unit_for(label): (
                                         merge_data_view.sel(selector)[current_metric],
                                         merge_error_view.sel(selector)[current_metric] if withErrors else 0
                                     )
                                     for label in merge_data_view[comparison_variable].values
                                     for selector in [{comparison_variable: label, current_coordinate: current_coordinate_value}]
                                 },
-                                ylabel = current_metric
                             )
+                            ax.set_xlim(minTime, maxTime)
                             ax.legend()
                             fig.tight_layout()
                             by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
