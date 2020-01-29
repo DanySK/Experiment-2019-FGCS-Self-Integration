@@ -118,6 +118,6 @@ cache:
     - $PYENV_ROOT
 notifications:
   email:
-    if: branch = master
+    if: branch = master AND tag is blank
     on_success: never
     on_failure: change
