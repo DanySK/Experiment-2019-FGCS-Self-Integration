@@ -103,20 +103,24 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
         }
         val capitalizedName = it.nameWithoutExtension.capitalize()
         val basetask by basetask("show$capitalizedName")
-        val batchTask by basetask("run$capitalizedName") {
-            description = "Launches batch experiments for $capitalizedName"
-            jvmArgs("-XX:+AggressiveHeap")
-            maxHeapSize = "${heap}m"
-            File("data").mkdirs()
-            val variables = listOf("seed", "meanTaskSize", "smoothing", "grain", "peakFrequency").toTypedArray()
-            args(
-                "-e", "data/${it.nameWithoutExtension}",
-                "-b",
-                "-var", *variables,
-                "-p", threadCount
-            )
+        mapOf(
+            it.nameWithoutExtension to listOf("seed", "meanTaskSize", "smoothing", "grain", "peakFrequency").toTypedArray(),
+            "${it.nameWithoutExtension}Fixed" to listOf("longseed", "meanTaskSize", "peakFrequency").toTypedArray()
+        ).forEach { (testName, variables) ->
+            val batchTask by basetask("run$testName") {
+                description = "Launches batch experiments for $capitalizedName: $testName"
+                jvmArgs("-XX:+AggressiveHeap")
+                maxHeapSize = "${heap}m"
+                File("data").mkdirs()
+                args(
+                    "-e", "data/${testName}",
+                    "-b",
+                    "-var", *variables,
+                    "-p", threadCount
+                )
+            }
+            runAllExperiments.dependsOn(batchTask)
         }
-        runAllExperiments.dependsOn(batchTask)
         showAll.dependsOn(basetask)
     }
 

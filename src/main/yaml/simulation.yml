@@ -40,11 +40,18 @@ variables:
     parameters: [0.1, [0.01, 0.03, 0.1, 0.3, 0.9]]
   debug: &debug
     formula: "false"
-  seed: &seed
+  longseed:
+    min: 0
+    max: 99
+    step: 1
+    default: -1
+  seed:
     min: 0
     max: 9
     step: 1
     default: 0
+  actualseed: &seed
+    formula: "longseed < 0 ? seed : longseed"
 
 terminate:
   - type: AfterTime
