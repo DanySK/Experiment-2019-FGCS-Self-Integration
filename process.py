@@ -182,7 +182,7 @@ if __name__ == '__main__':
         lastTimeProcessed = pickle.load(open('timeprocessed', 'rb'))
     except:
         lastTimeProcessed = -1
-    shouldRecompute = newestFileTime != lastTimeProcessed
+    shouldRecompute = False # newestFileTime != lastTimeProcessed
     if not shouldRecompute:
         try:
             means = pickle.load(open(pickleOutput + '_mean', 'rb'))
@@ -274,37 +274,46 @@ if __name__ == '__main__':
         for (label, (data, error)) in ydata.items():
             lines = ax.plot(xdata, data, label=label, color=colors(index / (len(ydata) - 1)) if colors else None, linewidth=linewidth)
             index += 1
-            if error:
+            if error is not None:
                 last_color = lines[-1].get_color()
                 ax.plot(xdata, data+error, label=None, color=last_color, linewidth=errlinewidth)
                 ax.plot(xdata, data-error, label=None, color=last_color, linewidth=errlinewidth)
         return (fig, ax)
     for experiment in experiments:
         current_experiment_means = means[experiment]
+        current_experiment_errors = stdevs[experiment]
         for comparison_variable in set(current_experiment_means.coords) - {timeColumnName}:
             mergeable_variables = set(current_experiment_means.coords) - {timeColumnName, comparison_variable}
             for current_coordinate in mergeable_variables:
                 merge_variables = mergeable_variables - { current_coordinate }
                 merge_data_view = current_experiment_means.mean(dim = merge_variables, skipna = True)
+                merge_error_view = current_experiment_errors.mean(dim = merge_variables, skipna = True)
                 for current_coordinate_value in merge_data_view[current_coordinate].values:
                     for current_metric in merge_data_view.data_vars:
                         title = current_metric + " with " + comparison_variable + " when " + current_coordinate + "=" + str(current_coordinate_value)
-                        fig, ax = make_line_chart(
-                            title = title,
-                            xdata = merge_data_view[timeColumnName],
-                            xlabel = timeColumnName,
-                            ydata = {
-                                label: (merge_data_view.sel({comparison_variable: label, current_coordinate: current_coordinate_value})[current_metric], 0)
+                        for withErrors in [True, False]:
+                            fig, ax = make_line_chart(
+                                title = title,
+                                xdata = merge_data_view[timeColumnName],
+                                xlabel = timeColumnName,
+                                ydata = {
+                                    label: (
+                                        merge_data_view.sel(selector)[current_metric],
+                                        merge_error_view.sel(selector)[current_metric] if withErrors else 0
+                                    )
                                     for label in merge_data_view[comparison_variable].values
-                            },
-                            ylabel = current_metric
-                        )
-                        ax.legend()
-                        fig.tight_layout()
-                        by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
-                        Path(by_time_output_directory).mkdir(parents=True, exist_ok=True)
-                        fig.savefig(by_time_output_directory + "/" + current_metric + "_" + current_coordinate + "_" + str(current_coordinate_value) + ".pdf")
-                        plt.close(fig)
+                                    for selector in [{comparison_variable: label, current_coordinate: current_coordinate_value}]
+                                },
+                                ylabel = current_metric
+                            )
+                            ax.legend()
+                            fig.tight_layout()
+                            by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
+                            Path(by_time_output_directory).mkdir(parents=True, exist_ok=True)
+                            figname = f'{current_metric}_{current_coordinate}_{str(current_coordinate_value)}{"_err" if withErrors else ""}'
+                            fig.savefig(f'{by_time_output_directory}/{figname}.pdf')
+                            plt.close(fig)
+    
     # Prepare the charting system
 #    import seaborn as sns
 #    from matplotlib.colors import LogNorm
