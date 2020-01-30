@@ -184,15 +184,16 @@ if __name__ == '__main__':
             return f'{self.description()} {self.unit()}'
             
     labels = {
-        'freeCapacity[Mean]': Measure("available capacity", "MIPS"),
-        'capacity[Mean]': Measure("perceived capacity", "MIPS"),
-        'done[Sum]': Measure("completed tasks"),
-        'drop[Sum]': Measure("failed tasks"),
-        'waiting[Sum]': Measure("waiting tasks"),
-        'isLeader[Sum]': Measure("clusters count"),
+        'freeCapacity[Mean]': Measure(r"$\mathbf{E}[P_f]$", "MIPS"),
+        'capacity[Mean]': Measure(r"$\mathbf{E}[P_p]$", "MIPS"),
+        'done[Sum]': Measure(r"$T_s$", "tasks"),
+        'drop[Sum]': Measure(r"$T_d$", "tasks"),
+        'waiting[Sum]': Measure(r"$T_w$", "tasks"),
+        'isLeader[Sum]': Measure("A", "alliances"),
         'time': Measure("time", "s"),
-        'grain': Measure("region size", "MIPS"),
-        'peakFrequency': Measure(r'$f_P$', "Hz"),
+        'grain': Measure(r'$g$', "MIPS"),
+        'peakFrequency': Measure(r'$\lambda_P$', "Hz"),
+        'meanTaskSize': Measure(r'$s$', "Hz"),
     }
     def label_for(variable_name):
         return labels.get(variable_name, Measure(variable_name)).description()
@@ -317,7 +318,7 @@ if __name__ == '__main__':
                 merge_error_view = current_experiment_errors.mean(dim = merge_variables, skipna = True)
                 for current_coordinate_value in merge_data_view[current_coordinate].values:
                     for current_metric in merge_data_view.data_vars:
-                        title = f'{label_for(current_metric)} with {label_for(comparison_variable)} when {label_for(current_coordinate)}={current_coordinate_value}'
+                        title = f'{label_for(current_metric)} for diverse {label_for(comparison_variable)} when {label_for(current_coordinate)}={current_coordinate_value}'
                         for withErrors in [True, False]:
                             fig, ax = make_line_chart(
                                 title = title,
@@ -339,6 +340,7 @@ if __name__ == '__main__':
                             by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
                             Path(by_time_output_directory).mkdir(parents=True, exist_ok=True)
                             figname = f'{current_metric}_{current_coordinate}_{str(current_coordinate_value)}{"_err" if withErrors else ""}'
+                            figname = figname.replace('.', '_').replace('[', '').replace(']', '')
                             fig.savefig(f'{by_time_output_directory}/{figname}.pdf')
                             plt.close(fig)
     
