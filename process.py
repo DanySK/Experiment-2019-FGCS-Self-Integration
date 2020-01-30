@@ -340,6 +340,7 @@ if __name__ == '__main__':
                             by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
                             Path(by_time_output_directory).mkdir(parents=True, exist_ok=True)
                             figname = f'{current_metric}_{current_coordinate}_{str(current_coordinate_value)}{"_err" if withErrors else ""}'
+                            figname = figname.replace('.', '_').replace('[', '').replace(']', '')
                             fig.savefig(f'{by_time_output_directory}/{figname}.pdf')
                             plt.close(fig)
     
