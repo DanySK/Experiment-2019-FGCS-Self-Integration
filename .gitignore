@@ -13,3 +13,4 @@ charts/
 data_*
 timeprocessed
 .skip_data_process
+stale_outputs_checked
