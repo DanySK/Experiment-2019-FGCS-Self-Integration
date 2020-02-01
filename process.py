@@ -208,9 +208,9 @@ if __name__ == '__main__':
             def cleanMathMode(s):
                 return s[1:-1] if s[0] == '$' and s[-1] == '$' else s
             def deriveString(s):
-                return r'$\frac{d ' + cleanMathMode(s) + r'}{dt}$'
+                return r'$d ' + cleanMathMode(s) + r'/{dt}$'
             def deriveUnit(s):
-                return r'$\frac{' + cleanMathMode(s) + '}{s}$' if s else None
+                return f'${cleanMathMode(s)}' + '/{s}$' if s else None
             result = Measure(
                 new_description if new_description else deriveString(self.__description),
                 new_unit if new_unit else deriveUnit(self.__unit),
