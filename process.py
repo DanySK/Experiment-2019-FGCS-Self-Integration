@@ -204,6 +204,18 @@ if __name__ == '__main__':
             return self.__description
         def unit(self):
             return '' if self.__unit is None else f'({self.__unit})'
+        def derivative(self, new_description = None, new_unit = None):
+            def cleanMathMode(s):
+                return s[1:-1] if s[0] == '$' and s[-1] == '$' else s
+            def deriveString(s):
+                return r'$\frac{d ' + cleanMathMode(s) + r'}{dt}$'
+            def deriveUnit(s):
+                return r'$\frac{' + cleanMathMode(s) + '}{s}$' if s else None
+            result = Measure(
+                new_description if new_description else deriveString(self.__description),
+                new_unit if new_unit else deriveUnit(self.__unit),
+            )
+            return result
         def __str__(self):
             return f'{self.description()} {self.unit()}'
             
@@ -219,10 +231,14 @@ if __name__ == '__main__':
         'peakFrequency': Measure(r'$\lambda_P$', "Hz"),
         'meanTaskSize': Measure(r'$s$', "Hz"),
     }
+    def derivativeOrMeasure(variable_name):
+        if variable_name.endswith('dt'):
+            return labels.get(variable_name[:-2], Measure(variable_name)).derivative()
+        return Measure(variable_name)
     def label_for(variable_name):
-        return labels.get(variable_name, Measure(variable_name)).description()
+        return labels.get(variable_name, derivativeOrMeasure(variable_name)).description()
     def unit_for(variable_name):
-        return str(labels.get(variable_name, Measure(variable_name)))
+        return str(labels.get(variable_name, derivativeOrMeasure(variable_name)))
     
     # Setup libraries
     np.set_printoptions(formatter={'float': floatPrecision.format})
@@ -324,6 +340,7 @@ if __name__ == '__main__':
 #        ax.set_xlim(min(xdata), max(xdata))
         index = 0
         for (label, (data, error)) in ydata.items():
+#            print(f'plotting {data}\nagainst {xdata}')
             lines = ax.plot(xdata, data, label=label, color=colors(index / (len(ydata) - 1)) if colors else None, linewidth=linewidth)
             index += 1
             if error is not None:
@@ -332,7 +349,7 @@ if __name__ == '__main__':
                 ax.plot(xdata, data-error, label=None, color=last_color, linewidth=errlinewidth)
         return (fig, ax)
     def generate_all_charts(means, errors = None, basedir=''):
-        viable_coords = { coord for coord in sel_means.coords if sel_means[coord].size > 1 }
+        viable_coords = { coord for coord in means.coords if means[coord].size > 1 }
         for comparison_variable in viable_coords - {timeColumnName}:
             mergeable_variables = viable_coords - {timeColumnName, comparison_variable}
             for current_coordinate in mergeable_variables:
@@ -376,7 +393,13 @@ if __name__ == '__main__':
     selected_values = {"grain": 1500, "smoothing": 0.03}
     sel_means = means[experiment].sel(selected_values)
     sel_errors = stdevs[experiment].sel(selected_values)
-    generate_all_charts(sel_means, sel_errors, basedir = 'evaluation')
+    generate_all_charts(sel_means, sel_errors, basedir = 'evaluation/plain')
+    def differentiate(dataset):
+        derivatives = { var: f'{var}dt' for var in sel_means.data_vars }
+        return dataset.rename(derivatives).differentiate('time')
+    from math import sqrt
+    # Error of a derivative, assuming gaussian distribution of errors, is sqrt(2)* d sigma / dt
+    generate_all_charts(differentiate(sel_means), differentiate(sqrt(2) * sel_errors), basedir = 'evaluation/diff')
     
         
 #        for comparison_variable in set(current_experiment_means.coords) - {timeColumnName}:
