@@ -204,6 +204,18 @@ if __name__ == '__main__':
             return self.__description
         def unit(self):
             return '' if self.__unit is None else f'({self.__unit})'
+        def derivative(self, new_description = None, new_unit = None):
+            def cleanMathMode(s):
+                return s[1:-1] if s[0] == '$' and s[-1] == '$' else s
+            def deriveString(s):
+                return r'$\frac{d ' + cleanMathMode(s) + r'}{dt}$'
+            def deriveUnit(s):
+                return r'$\frac{' + cleanMathMode(s) + '}{s}$' if s else None
+            result = Measure(
+                new_description if new_description else deriveString(self.__description),
+                new_unit if new_unit else deriveUnit(self.__unit),
+            )
+            return result
         def __str__(self):
             return f'{self.description()} {self.unit()}'
             
@@ -219,10 +231,14 @@ if __name__ == '__main__':
         'peakFrequency': Measure(r'$\lambda_P$', "Hz"),
         'meanTaskSize': Measure(r'$s$', "Hz"),
     }
+    def derivativeOrMeasure(variable_name):
+        if variable_name.endswith('dt'):
+            return labels.get(variable_name[:-2], Measure(variable_name)).derivative()
+        return Measure(variable_name)
     def label_for(variable_name):
-        return labels.get(variable_name, Measure(variable_name)).description()
+        return labels.get(variable_name, derivativeOrMeasure(variable_name)).description()
     def unit_for(variable_name):
-        return str(labels.get(variable_name, Measure(variable_name)))
+        return str(labels.get(variable_name, derivativeOrMeasure(variable_name)))
     
     # Setup libraries
     np.set_printoptions(formatter={'float': floatPrecision.format})
@@ -324,6 +340,7 @@ if __name__ == '__main__':
 #        ax.set_xlim(min(xdata), max(xdata))
         index = 0
         for (label, (data, error)) in ydata.items():
+#            print(f'plotting {data}\nagainst {xdata}')
             lines = ax.plot(xdata, data, label=label, color=colors(index / (len(ydata) - 1)) if colors else None, linewidth=linewidth)
             index += 1
             if error is not None:
@@ -331,15 +348,14 @@ if __name__ == '__main__':
                 ax.plot(xdata, data+error, label=None, color=last_color, linewidth=errlinewidth)
                 ax.plot(xdata, data-error, label=None, color=last_color, linewidth=errlinewidth)
         return (fig, ax)
-    for experiment in experiments:
-        current_experiment_means = means[experiment]
-        current_experiment_errors = stdevs[experiment]
-        for comparison_variable in set(current_experiment_means.coords) - {timeColumnName}:
-            mergeable_variables = set(current_experiment_means.coords) - {timeColumnName, comparison_variable}
+    def generate_all_charts(means, errors = None, basedir=''):
+        viable_coords = { coord for coord in means.coords if means[coord].size > 1 }
+        for comparison_variable in viable_coords - {timeColumnName}:
+            mergeable_variables = viable_coords - {timeColumnName, comparison_variable}
             for current_coordinate in mergeable_variables:
                 merge_variables = mergeable_variables - { current_coordinate }
-                merge_data_view = current_experiment_means.mean(dim = merge_variables, skipna = True)
-                merge_error_view = current_experiment_errors.mean(dim = merge_variables, skipna = True)
+                merge_data_view = means.mean(dim = merge_variables, skipna = True)
+                merge_error_view = errors.mean(dim = merge_variables, skipna = True)
                 for current_coordinate_value in merge_data_view[current_coordinate].values:
                     beautified_value = beautifyValue(current_coordinate_value)
                     for current_metric in merge_data_view.data_vars:
@@ -362,12 +378,64 @@ if __name__ == '__main__':
                             ax.set_xlim(minTime, maxTime)
                             ax.legend()
                             fig.tight_layout()
-                            by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
+                            by_time_output_directory = f'{output_directory}/{basedir}/{comparison_variable}'
                             Path(by_time_output_directory).mkdir(parents=True, exist_ok=True)
                             figname = f'{comparison_variable}_{current_metric}_{current_coordinate}_{beautified_value}{"_err" if withErrors else ""}'
                             figname = figname.replace('.', '_').replace('[', '').replace(']', '')
                             fig.savefig(f'{by_time_output_directory}/{figname}.pdf')
                             plt.close(fig)
+    for experiment in experiments:
+        current_experiment_means = means[experiment]
+        current_experiment_errors = stdevs[experiment]
+        generate_all_charts(current_experiment_means, current_experiment_errors, basedir = f'{experiment}/all')
+        
+# Custom charting
+    selected_values = {"grain": 1500, "smoothing": 0.03}
+    sel_means = means[experiment].sel(selected_values)
+    sel_errors = stdevs[experiment].sel(selected_values)
+    generate_all_charts(sel_means, sel_errors, basedir = 'evaluation/plain')
+    def differentiate(dataset):
+        derivatives = { var: f'{var}dt' for var in sel_means.data_vars }
+        return dataset.rename(derivatives).differentiate('time')
+    from math import sqrt
+    # Error of a derivative, assuming gaussian distribution of errors, is sqrt(2)* d sigma / dt
+    generate_all_charts(differentiate(sel_means), differentiate(sqrt(2) * sel_errors), basedir = 'evaluation/diff')
+    
+        
+#        for comparison_variable in set(current_experiment_means.coords) - {timeColumnName}:
+#            mergeable_variables = set(current_experiment_means.coords) - {timeColumnName, comparison_variable}
+#            for current_coordinate in mergeable_variables:
+#                merge_variables = mergeable_variables - { current_coordinate }
+#                merge_data_view = current_experiment_means.mean(dim = merge_variables, skipna = True)
+#                merge_error_view = current_experiment_errors.mean(dim = merge_variables, skipna = True)
+#                for current_coordinate_value in merge_data_view[current_coordinate].values:
+#                    beautified_value = beautifyValue(current_coordinate_value)
+#                    for current_metric in merge_data_view.data_vars:
+#                        title = f'{label_for(current_metric)} for diverse {label_for(comparison_variable)} when {label_for(current_coordinate)}={beautified_value}'
+#                        for withErrors in [True, False]:
+#                            fig, ax = make_line_chart(
+#                                title = title,
+#                                xdata = merge_data_view[timeColumnName],
+#                                xlabel = unit_for(timeColumnName),
+#                                ylabel = unit_for(current_metric),
+#                                ydata = {
+#                                    beautifyValue(label): (
+#                                        merge_data_view.sel(selector)[current_metric],
+#                                        merge_error_view.sel(selector)[current_metric] if withErrors else 0
+#                                    )
+#                                    for label in merge_data_view[comparison_variable].values
+#                                    for selector in [{comparison_variable: label, current_coordinate: current_coordinate_value}]
+#                                },
+#                            )
+#                            ax.set_xlim(minTime, maxTime)
+#                            ax.legend()
+#                            fig.tight_layout()
+#                            by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
+#                            Path(by_time_output_directory).mkdir(parents=True, exist_ok=True)
+#                            figname = f'{comparison_variable}_{current_metric}_{current_coordinate}_{beautified_value}{"_err" if withErrors else ""}'
+#                            figname = figname.replace('.', '_').replace('[', '').replace(']', '')
+#                            fig.savefig(f'{by_time_output_directory}/{figname}.pdf')
+#                            plt.close(fig)
     
     # Prepare the charting system
 #    import seaborn as sns
