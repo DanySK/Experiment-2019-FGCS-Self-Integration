@@ -151,6 +151,30 @@ def openCsv(path):
         lines = filter(lambda x: regex.match(x[0]), file.readlines())
         return [[float(x) for x in line.split()] for line in lines]
 
+def beautifyValue(v):
+    """
+    Converts an object to a better version for printing, in particular:
+        - if the object converts to float, then its float value is used
+        - if the object can be rounded to int, then the int value is preferred
+
+    Parameters
+    ----------
+    v : object
+        the object to try to beautify
+
+    Returns
+    -------
+    object or float or int
+        the beautified value
+    """
+    try:
+        v = float(v)
+        if v.is_integer():
+            return int(v)
+        return v
+    except:
+        return v
+
 if __name__ == '__main__':
     # CONFIGURE SCRIPT
     # Where to find Alchemist data files
@@ -282,7 +306,7 @@ if __name__ == '__main__':
         pickle.dump(means, open(pickleOutput + '_mean', 'wb'), protocol=-1)
         pickle.dump(stdevs, open(pickleOutput + '_std', 'wb'), protocol=-1)
         pickle.dump(newestFileTime, open('timeprocessed', 'wb'))
-        
+
     # QUICK CHARTING
 
     import matplotlib
@@ -317,8 +341,9 @@ if __name__ == '__main__':
                 merge_data_view = current_experiment_means.mean(dim = merge_variables, skipna = True)
                 merge_error_view = current_experiment_errors.mean(dim = merge_variables, skipna = True)
                 for current_coordinate_value in merge_data_view[current_coordinate].values:
+                    beautified_value = beautifyValue(current_coordinate_value)
                     for current_metric in merge_data_view.data_vars:
-                        title = f'{label_for(current_metric)} for diverse {label_for(comparison_variable)} when {label_for(current_coordinate)}={current_coordinate_value}'
+                        title = f'{label_for(current_metric)} for diverse {label_for(comparison_variable)} when {label_for(current_coordinate)}={beautified_value}'
                         for withErrors in [True, False]:
                             fig, ax = make_line_chart(
                                 title = title,
@@ -326,7 +351,7 @@ if __name__ == '__main__':
                                 xlabel = unit_for(timeColumnName),
                                 ylabel = unit_for(current_metric),
                                 ydata = {
-                                    unit_for(label): (
+                                    beautifyValue(label): (
                                         merge_data_view.sel(selector)[current_metric],
                                         merge_error_view.sel(selector)[current_metric] if withErrors else 0
                                     )
@@ -339,7 +364,7 @@ if __name__ == '__main__':
                             fig.tight_layout()
                             by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
                             Path(by_time_output_directory).mkdir(parents=True, exist_ok=True)
-                            figname = f'{current_metric}_{current_coordinate}_{str(current_coordinate_value)}{"_err" if withErrors else ""}'
+                            figname = f'{comparison_variable}_{current_metric}_{current_coordinate}_{beautified_value}{"_err" if withErrors else ""}'
                             figname = figname.replace('.', '_').replace('[', '').replace(']', '')
                             fig.savefig(f'{by_time_output_directory}/{figname}.pdf')
                             plt.close(fig)
