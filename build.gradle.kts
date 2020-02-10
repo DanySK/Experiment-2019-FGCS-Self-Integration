@@ -110,7 +110,7 @@ File(rootProject.rootDir.path + "/src/main/yaml").listFiles()
             val batchTask by basetask("run$testName") {
                 description = "Launches batch experiments for $capitalizedName: $testName"
                 jvmArgs("-XX:+AggressiveHeap")
-                maxHeapSize = "${heap}m"
+                maxHeapSize = "${minOf(heap.toInt(), threadCount * taskSize)}m"
                 File("data").mkdirs()
                 args(
                     "-e", "data/${testName}",
