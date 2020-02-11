@@ -184,7 +184,7 @@ if __name__ == '__main__':
     # How to name the summary of the processed data
     pickleOutput = 'data_summary'
     # Experiment prefixes: one per experiment (root of the file name)
-    experiments = ['simulation']
+    experiments = ['simulation', 'simulationFixed']
     floatPrecision = '{: 0.3f}'
     # Number of time samples 
     timeSamples = 600
@@ -194,7 +194,7 @@ if __name__ == '__main__':
     timeColumnName = 'time'
     logarithmicTime = False
     # One or more variables are considered random and "flattened"
-    seedVars = ['seed']
+    seedVars = ['seed', 'longseed']
     # Label mapping
     class Measure:
         def __init__(self, description, unit = None):
@@ -316,8 +316,9 @@ if __name__ == '__main__':
                             experimentVars = extractCoordinates(file)
                             darray.loc[experimentVars] = data[:, idx].A1
                 # Fold the dataset along the seed variables, producing the mean and stdev datasets
-                means[experiment] = dataset.mean(dim = seedVars, skipna=True)
-                stdevs[experiment] = dataset.std(dim = seedVars, skipna=True)
+                mergingVariables = [seed for seed in seedVars if seed in dataset.coords]
+                means[experiment] = dataset.mean(dim = mergingVariables, skipna=True)
+                stdevs[experiment] = dataset.std(dim = mergingVariables, skipna=True)
         # Save the datasets
         pickle.dump(means, open(pickleOutput + '_mean', 'wb'), protocol=-1)
         pickle.dump(stdevs, open(pickleOutput + '_std', 'wb'), protocol=-1)
@@ -390,9 +391,9 @@ if __name__ == '__main__':
         generate_all_charts(current_experiment_means, current_experiment_errors, basedir = f'{experiment}/all')
         
 # Custom charting
-    selected_values = {"grain": 1500, "smoothing": 0.03}
-    sel_means = means[experiment].sel(selected_values)
-    sel_errors = stdevs[experiment].sel(selected_values)
+#    selected_values = {"grain": 1500, "smoothing": 0.03}
+    sel_means = means['simulationFixed'] # means[experiment].sel(selected_values)
+    sel_errors = stdevs['simulationFixed'] # stdevs[experiment].sel(selected_values)
     generate_all_charts(sel_means, sel_errors, basedir = 'evaluation/plain')
     def differentiate(dataset):
         derivatives = { var: f'{var}dt' for var in sel_means.data_vars }
