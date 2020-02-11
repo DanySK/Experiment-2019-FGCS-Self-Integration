@@ -55,6 +55,9 @@ _make_charts: &make_charts
   os: linux
   language: minimal
   stage: charts
+  before_script:
+    - echo Reducing data size to two seeds for quicker testing
+    - rm data/simulation*seed-[!01].0_*.txt
   install:
     - curl "${GRAVIS}.install-python.sh" --output ~/.install-python.sh
     - travis_retry source ~/.install-python.sh
@@ -85,6 +88,7 @@ jobs:
     # Python 3.6.3 on Linux with deployment
     - <<: *make_charts
       <<: *python_reference
+      before_script: true
       before_deploy:
         - tar -czvf "charts.tar.gz" -C $TRAVIS_BUILD_DIR/charts/ .
         - git config --local user.name "Danilo Pianini"
