@@ -57,7 +57,7 @@ _make_charts: &make_charts
   stage: charts
   before_script:
     - echo Reducing data size to two seeds for quicker testing
-    - rm data/simulation*seed-[!01].0_*.txt
+    - find data -name simulation*seed-[!01].0_*.txt | xargs rm
   install:
     - curl "${GRAVIS}.install-python.sh" --output ~/.install-python.sh
     - travis_retry source ~/.install-python.sh
