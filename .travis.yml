@@ -20,8 +20,8 @@ env:
   matrix:
     - JDK="adopt@1.11"
     - JDK="adopt-openj9@1.11"
-    - JDK="adopt@" # Should test the latest
-    - JDK="adopt-openj9@"
+    - JDK="adopt@1.13"
+    - JDK="adopt-openj9@1.13"
 
 
 # Utilities
