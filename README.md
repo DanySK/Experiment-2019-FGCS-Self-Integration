@@ -7,9 +7,9 @@ This repository contains code and instruction to reproduce the experiments prese
 ## Requirements
 
 In order to run the experiments, the Java Development Kit 11 is required.
-It is very likely that they can run on any later version, but it is not guaranteed.
-We test using OpenJ9 11 and latest, and OpenJDK 11 and latest.
+We test using OpenJ9 11 and 13, and OpenJDK 11 and 13.
 Original testing was performed with OpenJDK 11 and OpenJ9 11.
+It is known that this project does not work (due to a compatibility issue of the version of Protelis in use) to any JDK from 14 on.
 
 In order to produce the charts, Python 3 is required.
 We recommend Python 3.6.1,
