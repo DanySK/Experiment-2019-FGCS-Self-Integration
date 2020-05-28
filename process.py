@@ -331,7 +331,7 @@ if __name__ == '__main__':
     import matplotlib.cm as cmx
     matplotlib.rcParams.update({'axes.titlesize': 12})
     matplotlib.rcParams.update({'axes.labelsize': 10})
-    def make_line_chart(xdata, ydata, title = None, ylabel = None, xlabel = None, colors = None, linewidth = 1, errlinewidth = 0.5, figure_size = (6, 4)):
+    def make_line_chart(xdata, ydata, title = None, ylabel = None, xlabel = None, colors = None, linewidth = 0, errlinewidth = 0.5, figure_size = (6, 4)):
         fig = plt.figure(figsize = figure_size)
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title(title)
@@ -341,27 +341,27 @@ if __name__ == '__main__':
 #        ax.set_xlim(min(xdata), max(xdata))
         index = 0
         for (label, (data, error)) in ydata.items():
-#            print(f'plotting {data}\nagainst {xdata}')
-            lines = ax.plot(xdata, data, label=label, color=colors(index / (len(ydata) - 1)) if colors else None, linewidth=linewidth)
+            lines = ax.scatter(xdata, data, label=label, color=colors(index / (len(ydata) - 1)) if colors else None, marker='.')
             index += 1
-            if error is not None:
-                last_color = lines[-1].get_color()
-                ax.plot(xdata, data+error, label=None, color=last_color, linewidth=errlinewidth)
-                ax.plot(xdata, data-error, label=None, color=last_color, linewidth=errlinewidth)
+#            if error is not None:
+#                last_color = lines[-1].get_color()
+#                ax.plot(xdata, data+error, label=None, color=last_color, linewidth=errlinewidth)
+#                ax.plot(xdata, data-error, label=None, color=last_color, linewidth=errlinewidth)
         return (fig, ax)
+
     def generate_all_charts(means, errors = None, basedir=''):
         viable_coords = { coord for coord in means.coords if means[coord].size > 1 }
         for comparison_variable in viable_coords - {timeColumnName}:
             mergeable_variables = viable_coords - {timeColumnName, comparison_variable}
-            for current_coordinate in mergeable_variables:
+            for current_coordinate in { 'meanTaskSize' }:# mergeable_variables:
                 merge_variables = mergeable_variables - { current_coordinate }
                 merge_data_view = means.mean(dim = merge_variables, skipna = True)
-                merge_error_view = errors.mean(dim = merge_variables, skipna = True)
-                for current_coordinate_value in merge_data_view[current_coordinate].values:
+                merge_error_view = errors.mean(dim = merge_variables, skipna = True) if errors else None
+                for current_coordinate_value in { 10000.0 }: #merge_data_view[current_coordinate].values:
                     beautified_value = beautifyValue(current_coordinate_value)
                     for current_metric in merge_data_view.data_vars:
                         title = f'{label_for(current_metric)} for diverse {label_for(comparison_variable)} when {label_for(current_coordinate)}={beautified_value}'
-                        for withErrors in [True, False]:
+                        for withErrors in [False]:
                             fig, ax = make_line_chart(
                                 title = title,
                                 xdata = merge_data_view[timeColumnName],
@@ -376,7 +376,6 @@ if __name__ == '__main__':
                                     for selector in [{comparison_variable: label, current_coordinate: current_coordinate_value}]
                                 },
                             )
-                            ax.set_xlim(minTime, maxTime)
                             ax.legend()
                             fig.tight_layout()
                             by_time_output_directory = f'{output_directory}/{basedir}/{comparison_variable}'
@@ -394,161 +393,11 @@ if __name__ == '__main__':
 #    selected_values = {"grain": 1500, "smoothing": 0.03}
     sel_means = means['simulationFixed'] # means[experiment].sel(selected_values)
     sel_errors = stdevs['simulationFixed'] # stdevs[experiment].sel(selected_values)
-    generate_all_charts(sel_means, sel_errors, basedir = 'evaluation/plain')
+#    generate_all_charts(sel_means, sel_errors, basedir = 'evaluation/plain')
     def differentiate(dataset):
         derivatives = { var: f'{var}dt' for var in sel_means.data_vars }
         return dataset.rename(derivatives).differentiate('time')
     from math import sqrt
     # Error of a derivative, assuming gaussian distribution of errors, is sqrt(2)* d sigma / dt
-    generate_all_charts(differentiate(sel_means), differentiate(sqrt(2) * sel_errors), basedir = 'evaluation/diff')
+    generate_all_charts(differentiate(sel_means), basedir = 'evaluation/diff')
     
-        
-#        for comparison_variable in set(current_experiment_means.coords) - {timeColumnName}:
-#            mergeable_variables = set(current_experiment_means.coords) - {timeColumnName, comparison_variable}
-#            for current_coordinate in mergeable_variables:
-#                merge_variables = mergeable_variables - { current_coordinate }
-#                merge_data_view = current_experiment_means.mean(dim = merge_variables, skipna = True)
-#                merge_error_view = current_experiment_errors.mean(dim = merge_variables, skipna = True)
-#                for current_coordinate_value in merge_data_view[current_coordinate].values:
-#                    beautified_value = beautifyValue(current_coordinate_value)
-#                    for current_metric in merge_data_view.data_vars:
-#                        title = f'{label_for(current_metric)} for diverse {label_for(comparison_variable)} when {label_for(current_coordinate)}={beautified_value}'
-#                        for withErrors in [True, False]:
-#                            fig, ax = make_line_chart(
-#                                title = title,
-#                                xdata = merge_data_view[timeColumnName],
-#                                xlabel = unit_for(timeColumnName),
-#                                ylabel = unit_for(current_metric),
-#                                ydata = {
-#                                    beautifyValue(label): (
-#                                        merge_data_view.sel(selector)[current_metric],
-#                                        merge_error_view.sel(selector)[current_metric] if withErrors else 0
-#                                    )
-#                                    for label in merge_data_view[comparison_variable].values
-#                                    for selector in [{comparison_variable: label, current_coordinate: current_coordinate_value}]
-#                                },
-#                            )
-#                            ax.set_xlim(minTime, maxTime)
-#                            ax.legend()
-#                            fig.tight_layout()
-#                            by_time_output_directory = output_directory + "/" + experiment + "/by-time/" + comparison_variable
-#                            Path(by_time_output_directory).mkdir(parents=True, exist_ok=True)
-#                            figname = f'{comparison_variable}_{current_metric}_{current_coordinate}_{beautified_value}{"_err" if withErrors else ""}'
-#                            figname = figname.replace('.', '_').replace('[', '').replace(']', '')
-#                            fig.savefig(f'{by_time_output_directory}/{figname}.pdf')
-#                            plt.close(fig)
-    
-    # Prepare the charting system
-#    import seaborn as sns
-#    from matplotlib.colors import LogNorm
-#    def make_heatmap_chart(matrix, vmin = None, vmax = None, ticks = None, show_values = False, norm = None, title = None, ylabel = None, xlabel = None, colors = None, figure_size = (6, 4)):
-#        fig = plt.figure(figsize = figure_size)
-#        ax = fig.add_subplot(1, 1, 1)
-#        ax.set_title(title)
-#        sns.heatmap(
-#            matrix,
-#            vmin = vmin,
-#            vmax = vmax,
-#            annot = show_values,
-#            ax = ax,
-#            norm = norm,
-#            cmap = colors,
-#            cbar_kws = { "ticks": ticks } if ticks else None
-#        )
-#        ax.invert_yaxis()
-#        if xlabel:
-#            ax.set_xlabel(xlabel)
-#        if ylabel:
-#            ax.set_ylabel(ylabel)
-#        return (fig, ax)
-#    for experiment in experiments:
-#        metric = 'taskHops[Mean]'
-#        current_experiment_data = means[experiment].mean(dim = timeColumnName)[metric]
-#        labelmap = { True: "process-based", False: "gradient-based" }
-#        for value in current_experiment_data.coords[comparison_variable].values:
-#            heatmap_data = current_experiment_data.sel({comparison_variable: value})
-#            axes_names = list({ name for name in heatmap_data.coords } - { comparison_variable })
-#            values_x = heatmap_data.coords[axes_names[0]]
-#            values_y = heatmap_data.coords[axes_names[1]]
-#            extent = (min(values_x), max(values_x), min(values_y), max(values_y))
-#            log_norm = LogNorm(vmin=1, vmax=heatmap_data.max())
-#            ticks = [1, 10, 20, 40]
-##            basecolormap = cmx.seismic
-#            fig, ax = make_heatmap_chart(
-#                heatmap_data.clip(1, 100).to_pandas().transpose(),
-#                title = "Route length with " + labelmap[value] + " discovery",
-#                norm = log_norm,
-#                ylabel = "Mean route length to cloud provider (hops)",
-#                xlabel = "Per-client request creation rate (Hz)",
-#                colors = cmx.viridis_r,
-#                vmin = 1,
-#                vmax = 100,
-#                show_values = False,
-#                ticks = [1, 10, 20, 100, current_experiment_data.max()]
-#            )
-#            fig.tight_layout()
-#            fig.savefig(output_directory + "/" + labelmap[value] + ".pdf")
-#            plt.close(fig)
-#
-#    # Prepare selected charts
-#    # Evaluation of the backoff parameter
-#    
-#    # CHART set 1: broadcast-time + ccast-time
-#    # CHART set 2: performance w.r.t. stage width
-#    allwidths = means['corridor']
-#    reference_stage_width = 2000
-#    data_by_time = allwidths.sel(stage_width=reference_stage_width)
-#    data_by_width = allwidths.mean('time')
-#    charterrordata = stdevs['corridor']
-#    mixcolormap = lambda x: cmx.winter(x * 2) if x < 0.5 else cmx.YlOrRd((x - 0.5) * 2 * 0.6 + 0.3)
-#    divergingmixcolormap = lambda x: cmx.winter(1 - x * 2) if x < 0.5 else cmx.YlOrRd((x - 0.5) * 2 * 0.6 + 0.3)
-#    for algorithm in ['b', 'c']:
-#        # wrt time
-#        fig, ax = makechart(
-#            xdata = data_by_time['time'],
-#            ydata = {
-#                primitive + kind : (
-#                    data_by_time[label],
-#                    stdevs['corridor'].sel(stage_width=reference_stage_width)[label]
-#                )
-#                for label, primitive, kind in (
-#                    (primitive + "-" + algorithm + "cast" + kind + "[Sum]", primitive, kind)
-#                    for primitive in ['rep', 'share']
-#                    for kind in ["-single", ""]
-#                )
-#            },
-#            ylabel = "Packet delay (s)",
-#            xlabel = "Simulation time (s)",
-#            figure_size = (6, 3),
-#            colors = mixcolormap,
-#            linewidth = 1.5,
-#            title = "rep vs. share performance, " + ("broadcast" if algorithm == 'b' else 'accumulation')
-#        )
-#        ax.legend()
-#        fig.tight_layout()
-#        fig.savefig("delay-" + algorithm + ".pdf")
-#        fig, ax = makechart(
-#            xdata = data_by_width['stage_width'],
-#            ydata = {
-#                primitive + kind : (
-#                    data_by_width[label],
-#                    stdevs['corridor'].mean('time')[label]
-#                )
-#                for label, primitive, kind in (
-#                    (primitive + "-" + algorithm + "cast" + kind + "[Sum]", primitive, kind)
-#                    for primitive in ['rep', 'share']
-#                    for kind in ["-single", ""]
-#                )
-#            },
-#            ylabel = "Mean packet delay (s)",
-#            xlabel = "Distance between source and destination (m)",
-#            figure_size = (6, 3),
-#            colors = mixcolormap,
-#            linewidth = 1.5,
-#            title = "rep vs. share performance, " + ("broadcast" if algorithm == 'b' else 'accumulation')
-#        )
-##        ax.set_xscale('log')
-#        ax.legend()
-#        fig.tight_layout()
-#        fig.savefig("width-" + algorithm + ".pdf")
-        
